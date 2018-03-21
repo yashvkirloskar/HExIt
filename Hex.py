@@ -51,10 +51,10 @@ class Hex:
                     return "Not a Win"
                 node = fifo.pop()
                 if self.turn == 0:
-                    if node.pos[0] == self.game_size-1:
+                    if node.pos[1] == self.game_size-1:
                         return "Win"
                 elif self.turn == 1:
-                    if node.pos[1] == self.game_size-1:
+                    if node.pos[0] == self.game_size-1:
                         return "Win"
                 if closed[node] == 0:
                     closed[node] += 1

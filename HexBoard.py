@@ -50,5 +50,8 @@ class Board(list):
             for j in range(self.game_size):
                 if self.hexagons[i][j].player != -1:
                     board[i][j] = self.hexagons[i][j].player+1
-        return str(board)
+        out = ""
+        for i in range(self.game_size):
+            out += str(board[i])+"\n"
+        return out
 
