@@ -52,12 +52,12 @@ class gameGrid():
                 l.image = self.white
                 l.place(anchor=NW, x=xi, y=YPAD + yi * IMG_SIZE)
                 l.bind('<Button-1>', lambda e: self.on_click(e))
-                xi += IMG_SIZE
+                xi += 1.5 * IMG_SIZE
 
     def getCoordinates(self, widget):
         row = (widget.winfo_y() - YPAD) / IMG_SIZE
-        col = (widget.winfo_x() - XPAD - row * IMG_SIZE) / (IMG_SIZE)
-        return row, col
+        col = (widget.winfo_x() - XPAD - row * IMG_SIZE) / (1.5 * IMG_SIZE)
+        return int(row), int(col)
 
     def toggleColor(self, widget):
         if self.playInfo.turn == 1:
