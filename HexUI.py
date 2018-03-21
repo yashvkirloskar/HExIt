@@ -2,6 +2,8 @@
 # UI built by Raman Gupta and Rohan Gulati from Netaji Subhas Institute Of Technology
 # All game rule implementations built from scratch
 
+# Icon made by Freepik from www.flaticon.com
+
 from __future__ import print_function
 import Tkinter as tk
 from Tkinter import *
@@ -31,11 +33,15 @@ WIN_WIDTH = 2 * XPAD + (3 * GRID_SIZE - 1) * IMG_SIZE
 class gameGrid():
     def __init__(self, frame):
         self.frame = frame
-        self.white = PhotoImage(file="white35.gif")
-        self.red = PhotoImage(file="red35.gif")
-        self.blue = PhotoImage(file="blue35.gif")
+        # self.white = PhotoImage(file="white35.gif")
+        # self.red = PhotoImage(file="red35.gif")
+        # self.blue = PhotoImage(file="blue35.gif")
+        self.white = PhotoImage(file="blue_hex.gif")
+        self.red = PhotoImage(file="black_hex.gif")
+        self.blue = PhotoImage(file="white_hex.gif")
         self.drawGrid()
         self.playInfo = Hex(GRID_SIZE)
+        self.frame.configure(background="yellow")
 
     def drawGrid(self):
         for yi in range(0, GRID_SIZE):
@@ -46,11 +52,11 @@ class gameGrid():
                 l.image = self.white
                 l.place(anchor=NW, x=xi, y=YPAD + yi * IMG_SIZE)
                 l.bind('<Button-1>', lambda e: self.on_click(e))
-                xi += 2 * IMG_SIZE
+                xi += IMG_SIZE
 
     def getCoordinates(self, widget):
         row = (widget.winfo_y() - YPAD) / IMG_SIZE
-        col = (widget.winfo_x() - XPAD - row * IMG_SIZE) / (2 * IMG_SIZE)
+        col = (widget.winfo_x() - XPAD - row * IMG_SIZE) / (IMG_SIZE)
         return row, col
 
     def toggleColor(self, widget):
