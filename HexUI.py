@@ -87,9 +87,9 @@ class gameGrid():
         if self.playInfo.winner is not None:
             winner = ""
             if self.playInfo.turn == 0:
-                winner = " 1 ( Blue ) "
+                winner = " 1 ( White ) "
             else:
-                winner += " 2 ( Red ) "
+                winner += " 2 ( Black ) "
             self.display_winner(winner)
             print ("Click on any button to start another game.")
 
@@ -106,8 +106,9 @@ class gameWindow:
 
 def main():
     print ("Rules:")
-    print ("Blue is trying to get from top row to bottom.")
-    print ("Red is trying to get from left to right.")
+    print ("White plays first")
+    print ("White is trying to get from top row to bottom.")
+    print ("Black is trying to get from left to right.")
     window = Tk()
     window.wm_title("Hex Game")
     gameWindow(window)
