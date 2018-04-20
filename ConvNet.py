@@ -35,7 +35,14 @@ class ConvNet:
             self.offsets.append(tf.Variable(tf.zeros(shape=[conv_layer_depth])))
 
 
-    def train(inputs, labels, mode, mask):
+    def train(inputs, labels, mode, mask, turn):
+        # Inputs is the game board converted into the input described in the paper.
+        # Labels is a list of correct moves/state values?
+        # Mode is in ['train', 'test']
+        # Mask is a 0-1 array representing places on the board that can be played
+        # Turn is either ['black', 'white']
+        assert(turn in ['black', 'white'])
+
         outputs = [inputs]
         # Do convolution with ELU non-linearity and a batch-norm
         # Stride is always 1
@@ -57,6 +64,9 @@ class ConvNet:
         masked = tf.multiply(outputs[-1], mask)
 
         # Need to apply two fully parallel softmax layers
+        if turn == 'black':
+            
+        else:
 
 
         if mode == 'test':
