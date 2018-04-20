@@ -148,26 +148,39 @@ def generateRandomTestState():
 
 	return board
 
-
+def action_string(action):
+	if action == 9:
+		return "dummy"
+	row, col = action // 3, action % 3
+	row_string = "top" if row == 0 else ("middle" if row == 1 else "bottom")
+	col_string = "left" if col == 0 else ("center" if col == 1 else "right")
+	s = row_string + ", " + col_string
+	return s
 		
 
 
 def main():
 	squares = np.array(
-		[[1,1,-1],
-		 [-1,0,-1],
-		 [1,0,1]])
+		[[-1,1,-1],
+		 [1,1,0],
+		 [0,-1,0]])
 	t = TestState(squares)
 
 	start_states = [generateRandomTestState() for i in range(16)]
 	m = MCTS(num_actions=9, batch_size=16, simulations_per_state=1000)
 	ss, p1, p2 = m.generateDataBatch(start_states)
 	for i in range(16):
+		print("BOARD:")
 		print(ss[i])
-		print(p1[i])
-		print(p2[i])
-	#states = [State(x) for x in np.random.randint(0, 1000, 16)]
-	#data = m.generateDataBatch(states)
+		if ss[i].isPlayerOneTurn():
+			print("X's turn")
+			print(action_string(np.argmax(p1[i])))
+			print(np.array(p1[i][0:9]).reshape(3,3))
+		else:
+			print("O's turn")
+			print(action_string(np.argmax(p2[i])))
+			print(np.array(p2[i][0:9]).reshape(3,3))
+		
 
 
 if __name__ == '__main__':

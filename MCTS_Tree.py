@@ -2,6 +2,16 @@ import util
 import numpy as np
 from State import State
 
+def action_string(action):
+	if action == 9:
+		return "dummy"
+	row, col = action // 3, action % 3
+	row_string = "top" if row == 0 else ("middle" if row == 1 else "bottom")
+	col_string = "left" if col == 0 else ("center" if col == 1 else "right")
+	s = row_string + ", " + col_string
+	return s
+
+
 class MCTS_Tree:
 	def __init__(self, start_state, num_actions, max_depth=6, apprentice=None):
 		self.start_state = start_state
@@ -39,9 +49,13 @@ class MCTS_Node:
 		self.apprentice_probs = np.zeros(num_actions)
 		self.calculated_apprentice_probs = False # Helps avoid redundant queries to the apprentice
 
-		self.c_b = 0.3 # Needs tuning, coefficient for the term in UCT meant to incentivize exploration of never before seen moves
+		self.c_b = 3 # Needs tuning, coefficient for the term in UCT meant to incentivize exploration of never before seen moves
 		self.w_a = 40 # Needs tuning, coefficient for influence of apprentice in UCT (should be roughly avg # simulations per action at root)
 		self.epsilon = 1e-8 # To prevent division by 0 in UCT calculation
+
+	def __repr__(self):
+		s = self.state.__repr__()# + "R(S, A): " + str(self.outgoing_edge_rewards) + "\nN(S, A): " + str(self.outgoing_edge_traversals) + "\nN(S): " + str(self.node_visits)
+		return s
  
 	# Runs one simulation from this node till the end of the game.
 	# Performs the reward propagation from the end up till this node.
@@ -75,6 +89,7 @@ class MCTS_Node:
 			self.children[chosen_action] = new_node # set this node as one of my children
 			_, reward = new_node.rollout() # Rollout will take care of stats updates for the new child node.
 			self.updateStatistics(chosen_action, reward) # Update my own stats
+
 			return (chosen_action, reward)
 		# If we have been to this next state node, recurse
 		else:
@@ -113,7 +128,7 @@ class MCTS_Node:
 		_, reward = next_state_node.rollout()
 		# update my stats
 		self.updateStatistics(random_action, reward)
-		return (reward, random_action)
+		return (random_action, reward)
 
 
 	def chooseBestAction(self):
@@ -129,26 +144,15 @@ class MCTS_Node:
 
 		uct_new = uct + apprentice_term
 
-		# choose best action (making sure it's legal)
-		if self.state.isPlayerOneTurn():
-			i = 0
-			while i < self.num_actions:
-				best_action = np.argmax(uct_new)
-				if self.state.isLegalAction(best_action):
-					return best_action
-				else:
-					uct_new[best_action] = np.min(uct_new)
-				i += 1
 
-		else:
-			i = 0
-			while i < self.num_actions:
-				best_action = np.argmin(uct_new)
-				if self.state.isLegalAction(best_action):
-					return best_action
-				else:
-					uct_new[best_action] = np.max(uct_new)
-				i += 1
+		i = 0
+		while i < self.num_actions:
+			best_action = np.argmax(uct_new)
+			if self.state.isLegalAction(best_action):
+				return best_action
+			else:
+				uct_new[best_action] = np.min(uct_new) - 1
+			i += 1
 
 		# if we're down here, something went wrong, just push the problem to chooseRandomAction because meh
 		return self.state.chooseRandomAction()
@@ -157,6 +161,8 @@ class MCTS_Node:
 
 	def computeUct(self):
 		avg_reward = self.outgoing_edge_rewards / (self.outgoing_edge_traversals + self.epsilon) # vector
+		if (self.state.isPlayerTwoTurn()):
+			avg_reward *= -1
 		numer = np.log(self.node_visits) # scalar
 		denom = self.outgoing_edge_traversals + self.epsilon # vector
 		new_action_incentive = self.c_b * np.sqrt(numer / denom) # vector
