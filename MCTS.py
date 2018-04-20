@@ -11,10 +11,9 @@ class MCTS:
 	#uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
 	
 	#rollout begind at state s' we've never seen before. finish sim, add s' to tree. propagate signal up 
-	def __init__(self, game_size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
+	def __init__(self, num_actions=25, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
 		print ("initialized MCTS")
-		self.game_size = game_size
-		self.num_actions = game_size ** 2
+		self.num_actions = num_actions
 		self.batch_size = batch_size
 		self.simulations_per_state = simulations_per_state
 		self.max_depth = max_depth
@@ -36,12 +35,12 @@ class MCTS:
 		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 
 		for i, state in enumerate(starting_states):
-			
-			if state.playerOneTurn():
-				action_distribution1 = self.runSimulations(state)
+			print("i:", i)
+			if state.isPlayerOneTurn():
+				action_distribution1[i][0:self.num_actions] = self.runSimulations(state)
 				action_distribution2[i][-1] = 1
 			else:
-				action_distribution2 = self.runSimulations(state)
+				action_distribution2[i][0:self.num_actions] = self.runSimulations(state)
 				action_distribution1[i][-1] = 1
 
 		return (starting_states, action_distribution1, action_distribution2)
@@ -53,11 +52,6 @@ class MCTS:
 	# The i-th element is the number of times we took the i-th action from the root state (as a probability).
 	# The last element is the number of times we took no action (if it wasn't this player's turn.)
 	def runSimulations(self, start_state):
-		# breakpoints = list(np.random.randint(0, self.simulations_per_state, self.num_actions - 1))
-		# breakpoints = [0] + breakpoints + [self.simulations_per_state]
-		# breakpoints = sorted(breakpoints)
-		# action_counts = [breakpoints[i + 1] - breakpoints[i] for i in range(self.num_actions)]
-		# return action_counts
 
 		# Initialize new tree
 		self.tree = MCTS_Tree(start_state, self.num_actions, max_depth=self.max_depth, apprentice=self.apprentice)
@@ -67,15 +61,3 @@ class MCTS:
 		return self.tree.getActionCounts() / self.simulations_per_state
 				
 
-
-
-
-
-def main():
-	m = MCTS(batch_size=16, simulations_per_state=100)
-	states = [State(x) for x in np.random.randint(0, 1000, 16)]
-	data = m.generateDataBatch(states)
-
-
-if __name__ == '__main__':
-	main()
