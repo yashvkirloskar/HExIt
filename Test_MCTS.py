@@ -1,107 +1,10 @@
 import util
 import numpy as np
-from State import State
+from State import State, TestState
 from MCTS import MCTS
 from MCTS_Tree import MCTS_Tree, MCTS_Node
 import random, math
 from scipy.special import comb
-
-# to test, we will use a tic tac toe board
-class TestState:
-	def __init__(self, squares):
-		self.squares = squares
-	def __eq__(self, other):
-		return self.squares == other.squares
-	def __repr__(self):
-		s = "\n"
-		for i in range(3):
-			for j in range(3):
-				val = self.squares[i][j]
-				s += "X " if val == 1 else ("O " if val == -1 else "_ ")
-			s += "\n"
-		return s
-
-	def winner(self):
-		t = self.squares
-		# check each row
-		for i in range(3):
-			if np.all(t[i] == [1,1,1]):
-				return 1
-			if np.all(t[i] == [-1,-1,-1]):
-				return -1
-
-		# check each col
-		for j in range(3):
-			if np.all(t[:,j] == [1,1,1]):
-				return 1
-			if np.all(t[:,j] == [-1,-1,-1]):
-				return -1
-
-		# check top left bottom right diag
-		if t[0,0] == t[1,1] == t[2,2] == 1:
-			return 1
-		if t[0,0] == t[1,1] == t[2,2] == -1:
-			return -1
-
-		# check top right bottom left diag
-		if t[0,2] == t[1,1] == t[2,0] == 1:
-			return 1
-		if t[0,2] == t[1,1] == t[2,0] == -1:
-			return -1
-
-		return 0
-
-	def isTerminalState(self):
-		w = self.winner()
-		if w == 1 or w == -1:
-			return True
-		# check if draw
-		if np.all(self.squares != 0):
-			return True
-
-		return False
-
-	def calculateReward(self):
-		return self.winner()
-
-	def nextState(self, action):
-		# Assume given action is legal
-		row, col = action // 3, action % 3
-		turn = 1 if np.sum(self.squares) == 0 else -1
-		new_squares = self.squares.copy()
-		new_squares[row,col] = turn
-		return TestState(new_squares)
-
-	def isLegalAction(self, action):
-		row, col = action // 3, action % 3
-		return self.squares[row,col] == 0
-
-	def legalActions(self):
-		la = [a for a in range(9) if self.isLegalAction(a)]
-		return la
-
-	def chooseRandomAction(self):
-		if len(self.legalActions()) == 0:
-			return -1 # this really shouldn't happen
-		return random.choice(self.legalActions())
-
-	def turn(self):
-		return 1 if np.sum(self.squares) == 0 else -1
-
-	def isPlayerOneTurn(self):
-		return self.turn() == 1
-
-	def isPlayerTwoTurn(self):
-		return self.turn() == -1
-
-	def nonTerminalActions(self):
-		la = self.legalActions()
-		nta = []
-		for action in la:
-			b = self.nextState(action)
-			if not b.isTerminalState():
-				nta.append(action)
-		return nta
 
 
 def perm(n, k):

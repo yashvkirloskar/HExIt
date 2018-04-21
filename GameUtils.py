@@ -54,3 +54,13 @@ def hex_indices(i, j):
     indices.append((i, j-1))
     indices.append((i-1, j))
     return indices
+
+def board_from_channels(channels):
+    whites = channels[0]
+    blacks = channels[1] + np.ones_like(channels[1])*(channels[1] == 1)
+    board = whites+blacks
+    return board[2:-2, 2:-2]
+
+def channels_from_board(board):
+    pass
+    # TODO

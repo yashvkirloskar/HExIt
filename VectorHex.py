@@ -3,34 +3,44 @@ import util
 from GameUtils import *
 
 class VectorHex:
-    def __init__(self, game_size=5):
+    def __init__(self, game_size=5, channels=None):
         self.game_size = game_size
 
         # Initialize game.vector to be size (6, gs+2, gs+2) as per input specification
         # Layer 0: white pieces, Layer 1: black pieces, Layer 2: black stones connected to north, Layer 3: black stones connected to the south
         # Layer 4: white stones connected to west, Layer 5: white stones connected to east
         # self.board: white is 1, black is 2
-        self.vector = np.zeros((6, game_size+2, game_size+2))
-        
-        self.vector[0, :, 0:2] = 1
-        self.vector[0, :, -2:] = 1
+        if channels is None:
+            self.vector = np.zeros((6, game_size+4, game_size+4))
+            self.vector[0, :, 0:2] = 1
+            self.vector[0, :, -2:] = 1
+            self.vector[1, 0:2, :] = 1
+            self.vector[1, -2:, :] = 1
+            self.vector[2, 0:2, :] = 1
+            self.vector[3, -2:, :] = 1
+            self.vector[4, 0:2, :] = 1
+            self.vector[5, -2:, :] = 1
+            self.board = np.zeros((game_size, game_size))
+            self.turn = 1
+            self.winner = None
+        elif channels is not None:
+            self.vector = channels
+            self.board = board_from_channels(channels)
+            if check_win(board, 1, game_size):
+                self.winner = 1
+            elif check_win(board, 2, game_size):
+                self.winner = 2
+            if np.count_nonzero(self.board) % 2 == 0:
+                self.turn = 1
+            else:
+                self.turn = 2
 
-        self.vector[1, 0:2, :] = 1
-        self.vector[1, -2:, :] = 1
-        
-
-        self.vector[2, 0:2, :] = 1
-
-        self.vector[3, -2:, :] = 1
-
-        self.vector[4, 0:2, :] = 1
-
-        self.vector[5, -2:, :] = 1
- 
-        self.board = np.zeros((game_size, game_size))
-
-        self.turn = 1
-        self.winner = None
+    def isLegal(self, coord):
+        if x >= self.game_size or x < 0 or y >= self.game_size or y < 0:
+            return False
+        if self.board[x, y] != 0:
+            return False
+        return True
 
     def player_move(self, coord):
         if self.winner is not None:
@@ -38,9 +48,7 @@ class VectorHex:
 
         x, y = coord
         # Do some checks
-        if x >= self.game_size or x < 0 or y >= self.game_size or y < 0:
-            return None
-        if self.board[x, y] != 0:
+        if not self.isLegal(coord):
             return None
 
         self.board[x, y] = self.turn
@@ -57,9 +65,7 @@ class VectorHex:
         else:
             self.turn = 3 - self.turn
 
-    def board_from_channels(self):
-        # TODO
-        return None
+    
 
     
 
