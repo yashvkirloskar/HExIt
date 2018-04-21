@@ -144,7 +144,6 @@ class MCTS_Node:
 
 		uct_new = uct + apprentice_term
 
-
 		i = 0
 		while i < self.num_actions:
 			best_action = np.argmax(uct_new)
