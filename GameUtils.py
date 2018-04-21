@@ -2,8 +2,16 @@
 import util
 import numpy as np
 
+def isLegal(board, game_size, coord):
+    x, y = coord
+    if x >= game_size or x < 0 or y >= game_size or y < 0:
+        return False
+    if board[x, y] != 0:
+        return False
+    return True
+
 # Do a BFS on the just played player to see if they have met the win condition
-def check_win(board, turn, game_size):
+def isWin(board, turn, game_size):
     fifo = util.Queue()
     closed = util.Counter()
     
@@ -19,14 +27,14 @@ def check_win(board, turn, game_size):
 
     while True:
             if fifo.isEmpty():
-                return "Not a Win"
+                return False
             node = fifo.pop()
             if turn == 1:
                 if node[1] == game_size-1:
-                    return "Win"
+                    return True
             elif turn == 2:
                 if node[0] == game_size-1:
-                    return "Win"
+                    return True
             if closed[node] == 0:
                 closed[node] += 1
                 for child in get_neighbors(board, node, turn):

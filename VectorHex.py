@@ -35,20 +35,13 @@ class VectorHex:
             else:
                 self.turn = 2
 
-    def isLegal(self, coord):
-        if x >= self.game_size or x < 0 or y >= self.game_size or y < 0:
-            return False
-        if self.board[x, y] != 0:
-            return False
-        return True
-
     def player_move(self, coord):
         if self.winner is not None:
             return None
 
         x, y = coord
         # Do some checks
-        if not self.isLegal(coord):
+        if not isLegal(self.board, self.game_size, coord):
             return None
 
         self.board[x, y] = self.turn
@@ -59,7 +52,7 @@ class VectorHex:
         elif self.turn == 2:
             self.vector[1, x+2, y+2] = 1
 
-        if check_win(self.board, self.turn, self.game_size) == 'Win':
+        if isWin(self.board, self.turn, self.game_size):
             print ("Game Over, Player " + str(self.turn) + " wins!")
             self.winner = self.turn
         else:

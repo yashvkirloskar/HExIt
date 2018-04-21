@@ -5,11 +5,10 @@ from copy import deepcopy, copy
 import random
 
 class State:
-    def __init__(self, game):
-        # Questions: Do we want to store the entire game?
-        self.game = VectorHex(board)
-        self.channels = self.game.vector.copy()
-        self.board = self.game.board.copy()
+    def __init__(self, board):
+        self.board = board
+        self.turn = np.count_nonzero(self.board) % 2 + 1
+        self.win = None
 	
     def __eq__(self, other):
         return np.array_equal(self.board, other)
@@ -18,33 +17,41 @@ class State:
         return str(self.board)
 
     def winner(self):
-        # TODO
-        # May need to change to fit [-1, 1] instead of [1, 2]
-        if self.game.winner == 1:
+        if check_win(self.board, 1, self.board.shape[0]):
+            self.win = 1
             return 1
-        elif self.game.winner == 2:
+        elif check_win(self.board, 2, self.board.shape[0]):
+            self.win = -1
             return -1
         else:
+            self.win = 0
             return 0
 
     def isTerminalState(self):
-        return self.game.winner is not None
+        if self.win is None:
+            term = self.winner()
+            return term != 0
+        else:
+            return self.win != 0
 
     def calculateReward(self):
-        return self.winner()
+        if self.win is None:
+            return self.winner()
+        else:
+            return self.win
 
     def nextState(self, action):
-        row, col = action // self.game_size, action % self.game_size
-        game = deepcopy(self.game)
-        game.player_move((row, col))
-        return State(game)
+        row, col = action // self.board.shape[0], action % self.board.shape[0]
+        cpy = self.board.copy()
+        cpy[row, col] = turn
+        return State(cpy)
 
     def isLegalAction(self, action):
-        row, col = action // self.game_size, action % self.game_size
-        return self.game.isLegal((row, col))
+        row, col = action // self.board.shape[0], action % self.board.shape[0]
+        return isLegal((row, col))
 
     def legalActions(self):
-        la = [a for a in range(self.game_size*self.game_size) if self.isLegalAction(a)]
+        la = [a for a in range(self.board.shape[0]*self.game_size) if isLegalAction(self.board, self.board.shape[0], a)]
         return la
 
     def chooseRandomAction(self):
@@ -53,13 +60,13 @@ class State:
         return random.choice(self.legalActions())
 
     def turn(self):
-        return self.game.turn
+        return self.turn
 
     def isPlayerOneTurn(self):
-        return self.game.turn == 1
+        return self.turn == 1
 
     def isPlayerTwoTurn(self):
-        return self.game.turn == 2
+        return self.turn == 2
 
     def nonTerminalActions(self):
         la = self.legalActions()
