@@ -5,14 +5,19 @@
 # Icon made by Freepik from www.flaticon.com
 
 from __future__ import print_function
-import Tkinter as tk
-from Tkinter import *
+# For python3/python2 compatability
+try:
+    import Tkinter as tk
+    from Tkinter import *
+except ModuleNotFoundError:
+    import tkinter as tk
+    from tkinter import * 
 import array
 from sys import stdout
 from collections import namedtuple
 from math import *
 from time import sleep
-from Hex import *
+from VectorHex import *
 
 # Introduction to the game-------------------------------------------------------------------------------------------------------------
 """This is a two player Hex Game. In this game the player has to build a bridge from his side to his other side of 
@@ -33,23 +38,20 @@ WIN_WIDTH = 2 * XPAD + (3 * GRID_SIZE - 1) * IMG_SIZE
 class gameGrid():
     def __init__(self, frame):
         self.frame = frame
-        # self.white = PhotoImage(file="white35.gif")
-        # self.red = PhotoImage(file="red35.gif")
-        # self.blue = PhotoImage(file="blue35.gif")
-        self.white = PhotoImage(file="blue_hex.gif")
-        self.red = PhotoImage(file="black_hex.gif")
-        self.blue = PhotoImage(file="white_hex.gif")
+        self.temp = PhotoImage(file="blue_hex.gif")
+        self.black = PhotoImage(file="black_hex.gif")
+        self.white = PhotoImage(file="white_hex.gif")
         self.drawGrid()
-        self.playInfo = Hex(GRID_SIZE)
+        self.playInfo = VectorHex(GRID_SIZE)
         self.frame.configure(background="yellow")
 
     def drawGrid(self):
         for yi in range(0, GRID_SIZE):
             xi = XPAD + yi * IMG_SIZE
             for i in range(0, GRID_SIZE):
-                l = Label(self.frame, image=self.white)
+                l = Label(self.frame, image=self.temp)
                 l.pack()
-                l.image = self.white
+                l.image = self.temp
                 l.place(anchor=NW, x=xi, y=YPAD + yi * IMG_SIZE)
                 l.bind('<Button-1>', lambda e: self.on_click(e))
                 xi += 1.5 * IMG_SIZE
@@ -61,11 +63,11 @@ class gameGrid():
 
     def toggleColor(self, widget):
         if self.playInfo.turn == 1:
-            widget.config(image=self.red)
-            widget.image = self.red
+            widget.config(image=self.white)
+            widget.image = self.white
         else:
-            widget.config(image=self.blue)
-            widget.image = self.blue
+            widget.config(image=self.black)
+            widget.image = self.black
 
     def display_winner(self, winner):
         winner_window = Tk()
@@ -79,14 +81,14 @@ class gameGrid():
     def on_click(self, event):
         if self.playInfo.winner is not None:
             self.restart()
-        if event.widget.image != self.white:
+        if event.widget.image != self.temp:
             return
         self.toggleColor(event.widget)
         coord = self.getCoordinates(event.widget)
         self.playInfo.player_move(coord)
         if self.playInfo.winner is not None:
             winner = ""
-            if self.playInfo.turn == 0:
+            if self.playInfo.turn == 1:
                 winner = " 1 ( White ) "
             else:
                 winner += " 2 ( Black ) "
@@ -95,7 +97,7 @@ class gameGrid():
 
     def restart(self):
         self.drawGrid()
-        self.playInfo = Hex(GRID_SIZE)
+        self.playInfo = VectorHex(GRID_SIZE)
 
 class gameWindow:
     def __init__(self, window):
@@ -106,8 +108,8 @@ class gameWindow:
 
 def main():
     print ("Rules:")
-    print ("White plays first")
-    print ("White is trying to get from top row to bottom.")
+    print ("temp plays first")
+    print ("temp is trying to get from top row to bottom.")
     print ("Black is trying to get from left to right.")
     window = Tk()
     window.wm_title("Hex Game")

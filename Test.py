@@ -1,10 +1,11 @@
-from Hex import *
+from VectorHex import *
+from GameUtils import *
 
-testGame = Hex(3)
+testGame = VectorHex(5)
 testGame.player_move([0, 1])
-assert(testGame.board[0, 1].player == 0)
-for neighbor in testGame.board[0, 1].get_neighbors():
-    assert(isinstance(neighbor, EmptyPiece))
+assert(testGame.board[0, 1] == 1)
+for neighbor in get_neighbors(testGame.board, (0, 1), testGame.turn):
+    assert(testGame.board[neighbor] == -1 or testGame.board[neighbor] == 0)
 testGame.player_move([0,0])
 testGame.player_move([1,1])
 testGame.player_move([1,0])
@@ -14,4 +15,4 @@ testGame.player_move([3,1])
 testGame.player_move([3,0])
 testGame.player_move([4,1])
 testGame.player_move([4,0])
-assert(testGame.check_win() == "Win")
+assert(check_win(testGame.board, testGame.turn, testGame.game_size) == "Win")
