@@ -18,6 +18,7 @@ def get_config_proportions():
 		else:
 			counts[i] = (comb(9, i*2) * comb(i*2, i)) + (comb(9, i*2 + 1) * comb(i*2 + 1, i))
 	return counts/np.sum(counts)
+	
 
 # Generates a random non terminal state
 # Currently, not totally random.  The choice of num_squares_per has to be proportional to the number of possible configs.
