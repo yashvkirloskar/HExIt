@@ -41,6 +41,7 @@ class State:
         else:
             return self.win
 
+
     def nextState(self, action):
         # Assume action is legal
         row, col = action // self.board.shape[0], action % self.board.shape[0]
