@@ -21,7 +21,7 @@ def isWin(board, turn, game_size):
             if board[i, 0] == turn:
                 fifo.push((i, 0))
         # Black pieces on North edge
-        elif turn == 2:
+        elif turn == -1:
             if board[0, i] == turn:
                 fifo.push((0, i))
 
@@ -32,7 +32,7 @@ def isWin(board, turn, game_size):
             if turn == 1:
                 if node[1] == game_size-1:
                     return True
-            elif turn == 2:
+            elif turn == -1:
                 if node[0] == game_size-1:
                     return True
             if closed[node] == 0:
@@ -45,9 +45,9 @@ def get_neighbors(board, coord, turn):
     i, j = coord
     indices = hex_indices(i+1, j+1)
 
-    temp = np.pad(board.copy(), 1, 'constant', constant_values=-1)
+    temp = np.pad(board.copy(), 1, 'constant', constant_values=-2)
     for index in indices:
-        if temp[index] == -1 or temp[index] != turn:
+        if temp[index] == -2 or temp[index] != turn:
             continue
         else:
             neighbors.append((index[0]-1, index[1]-1))

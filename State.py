@@ -8,7 +8,7 @@ class State:
     def __init__(self, board):
         self.board = board
         # self.curr_turn 1 if P1 turn, and -1 if P2 turn
-        self.curr_turn = (((np.count_nonzero(self.board) % 2) * -2) + 1)
+        self.curr_turn = 1 if np.sum(board) == 0 else -1
         self.win = None
 	
     def __eq__(self, other):
@@ -21,12 +21,12 @@ class State:
         if isWin(self.board, 1, self.board.shape[0]):
             self.win = 1
             return 1
-        elif isWin(self.board, 2, self.board.shape[0]):
+        if isWin(self.board, -1, self.board.shape[0]):
             self.win = -1
             return -1
-        else:
-            self.win = 0
-            return 0
+        
+        self.win = 0
+        return 0
 
     def isTerminalState(self):
         if self.win is None:
@@ -55,7 +55,7 @@ class State:
         return self.board[row, col] == 0
 
     def legalActions(self):
-        if not self.win and not self.winner():
+        if self.win != 0 and self.winner() != 0:
             return []
         la = np.where(self.board.flatten() == 0)[0]
         return la
