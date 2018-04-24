@@ -3,13 +3,17 @@ import VectorHex
 from GameUtils import *
 from copy import deepcopy, copy
 import random
+from State_Utils import *
 
 class State:
     def __init__(self, board):
         self.board = board.astype(float)
         # self.curr_turn 1 if P1 turn, and -1 if P2 turn
         self.curr_turn = 1 if np.sum(board) == 0 else -1
-        self.win = None
+        if np.count_nonzero(self.board) < board.shape[0]*2-1:
+            self.win = 0
+        else:
+            self.win = None
 	
     def __eq__(self, other):
         return np.array_equal(self.board, other.board)
@@ -84,6 +88,25 @@ class State:
                 nta.append(action)
         return nta
 
+    def channels_from_state(self):
+        output = np.zeros(6, self.board.shape[0]+4, self.board.shape[0]+4)
+        # First layer: All locations of white stones (P1 locations)
+        output[0, :, 0:2] = 1
+        output[0, :, -2:] = 1
+        output[0, 2:-2, 2:-2] = (self.board==1)*self.board
+    
+        # Second layer: All locations of black stones (P2 locations)
+        output[1, 0:2, :] = 1
+        output[1, -2:, :] = 1
+        output[1, 2:-2, 2:-2] = (self.board==-1)*self.board*-1
+
+        # Third layer: White Stones connected to West Edge (left side)
+        output[2, 0:2, :] = 1
+        output[2, 2:-2, 2:-2] = self.board * bfs_right(self.board, self.board.size[0])
+
+        output[3, -2:, :] = 1
+        output[4, 0:2, :] = 1
+        output[5, -2:, :] = 1
 
 # to test, we will use a tic tac toe board
 class TestState:

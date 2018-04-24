@@ -64,7 +64,8 @@ class MCTS:
 
 	# Returns a np array of shape [2, batch_size, 6, 5, 5] of input data for white and black
 	# and a np array of shape [2, batch_size, 25] for white and black
-	def generateExpertBatch(self, outFile):
+	# Takes in one output for distributions and one for inputs
+	def generateExpertBatch(self, outFile1, outFile2):
 		p1States = []
 		p2States = []
 		# Generate BATCH_SIZE number of random states for each player
@@ -91,6 +92,9 @@ class MCTS:
 
 		for i in range(self.batch_size):
 			input_data[1, i] = channels_from_state(p2DataBatch[0][i])
+
+		np.save(outFile1, input_data)
+		np.save(outFile2, distributions)
 
 		return (input_data, distributions)
 

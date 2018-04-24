@@ -108,9 +108,9 @@ class gameWindow:
 
 def main():
     print ("Rules:")
-    print ("temp plays first")
-    print ("temp is trying to get from top row to bottom.")
-    print ("Black is trying to get from left to right.")
+    print ("White plays first")
+    print ("Black is trying to get from top row to bottom.")
+    print ("White is trying to get from left to right.")
     window = Tk()
     window.wm_title("Hex Game")
     gameWindow(window)

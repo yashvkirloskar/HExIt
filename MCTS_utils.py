@@ -50,7 +50,4 @@ def generateRandomState(size, turn):
         board = next
 
     return board
-
-def channels_from_state(board):
-    pass
-    # TODO
+    
