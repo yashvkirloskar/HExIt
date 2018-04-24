@@ -54,7 +54,7 @@ class State:
         return self.board[row, col] == 0
 
     def legalActions(self):
-        if self.win is not None and self.win != 0:
+        if not self.win and not self.winner():
             return []
         la = np.where(self.board.flatten() == 0)[0]
         return la

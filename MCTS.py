@@ -2,6 +2,7 @@ import util
 import numpy as np
 from MCTS_Tree import MCTS_Tree, MCTS_Node
 from State import State
+from MCTS_utils import *
 
 
 class MCTS:
@@ -11,9 +12,10 @@ class MCTS:
 	#uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
 	
 	#rollout begind at state s' we've never seen before. finish sim, add s' to tree. propagate signal up 
-	def __init__(self, num_actions=25, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
+	def __init__(self, num_actions=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
 		print ("initialized MCTS")
-		self.num_actions = num_actions
+		self.size = num_actions
+		self.num_actions = num_actions**2
 		self.batch_size = batch_size
 		self.simulations_per_state = simulations_per_state
 		self.max_depth = max_depth
@@ -59,5 +61,37 @@ class MCTS:
 			self.tree.runSingleSimulation()
 
 		return self.tree.getActionCounts() / self.simulations_per_state
-				
+
+	# Returns a np array of shape [2, batch_size, 6, 5, 5] of input data for white and black
+	# and a np array of shape [2, batch_size, 25] for white and black
+	def generateExpertBatch(self, outFile):
+		p1States = []
+		p2States = []
+		# Generate BATCH_SIZE number of random states for each player
+		for i in range(self.batch_size):
+			p1States.append(generateRandomState(self.size, 1))
+		for i in range(self.batch_size):
+			p2States.append(generateRandomState(self.size, -1))
+		
+		# We don't care about P2's action distribution, and the last column of -1's is unnecessary  
+		p1DataBatch = self.generateDataBatch(p1States)[0:2]
+		p1DataBatch[1] = p1DataBatch[1][:, :-1]
+
+		p2DataBatch = self.generateDataBatch(p2States)[0:3:2]
+		p2DataBatch[1] = p2DataBatch[1][:, :-1]
+
+		input_data = np.zeros[2, self.batch_size, 6, self.size, self.size]
+
+		distributions = np.zeros[2, self.batch_size, self.num_actions]
+		distributions[0] = p1DataBatch[1]
+		distributions[1] = p2DataBatch[1]
+
+		for i in range(self.batch_size):
+			input_data[0, i] = channels_from_state(p1DataBatch[0][i])
+
+		for i in range(self.batch_size):
+			input_data[1, i] = channels_from_state(p2DataBatch[0][i])
+
+		return (input_data, distributions)
+
 
