@@ -7,7 +7,8 @@ import random
 class State:
     def __init__(self, board):
         self.board = board
-        self.turn = np.count_nonzero(self.board) % 2 + 1
+        # self.curr_turn 1 if P1 turn, and -1 if P2 turn
+        self.curr_turn = (((np.count_nonzero(self.board) % 2) * -2) + 1)
         self.win = None
 	
     def __eq__(self, other):
@@ -17,10 +18,10 @@ class State:
         return str(self.board)
 
     def winner(self):
-        if check_win(self.board, 1, self.board.shape[0]):
+        if isWin(self.board, 1, self.board.shape[0]):
             self.win = 1
             return 1
-        elif check_win(self.board, 2, self.board.shape[0]):
+        elif isWin(self.board, 2, self.board.shape[0]):
             self.win = -1
             return -1
         else:
@@ -41,32 +42,37 @@ class State:
             return self.win
 
     def nextState(self, action):
+        # Assume action is legal
         row, col = action // self.board.shape[0], action % self.board.shape[0]
         cpy = self.board.copy()
-        cpy[row, col] = turn
+        cpy[row, col] = self.curr_turn
+        self.curr_turn *= -1
         return State(cpy)
 
     def isLegalAction(self, action):
         row, col = action // self.board.shape[0], action % self.board.shape[0]
-        return isLegal((row, col))
+        return self.board[row, col] == 0
 
     def legalActions(self):
-        la = [a for a in range(self.board.shape[0]*self.game_size) if isLegalAction(self.board, self.board.shape[0], a)]
+        if self.win is not None and self.win != 0:
+            return []
+        la = np.where(self.board.flatten() == 0)[0]
         return la
 
     def chooseRandomAction(self):
-        if len(self.legalActions()) == 0:
-            return -1 # this really shouldn't happen
-        return random.choice(self.legalActions())
+        la = self.legalActions()
+        if len(la) == 0:
+            return -1 # this could happen if terminal state
+        return random.choice(la)
 
     def turn(self):
-        return self.turn
+        return self.curr_turn
 
     def isPlayerOneTurn(self):
-        return self.turn == 1
+        return self.curr_turn == 1
 
     def isPlayerTwoTurn(self):
-        return self.turn == 2
+        return self.curr_turn == -1
 
     def nonTerminalActions(self):
         la = self.legalActions()
