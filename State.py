@@ -6,13 +6,13 @@ import random
 
 class State:
     def __init__(self, board):
-        self.board = board
+        self.board = board.astype(float)
         # self.curr_turn 1 if P1 turn, and -1 if P2 turn
         self.curr_turn = 1 if np.sum(board) == 0 else -1
         self.win = None
 	
     def __eq__(self, other):
-        return np.array_equal(self.board, other)
+        return np.array_equal(self.board, other.board)
 	
     def __repr__(self):
         return str(self.board)
@@ -26,6 +26,7 @@ class State:
             return -1
         
         self.win = 0
+
         return 0
 
     def isTerminalState(self):
@@ -47,7 +48,6 @@ class State:
         row, col = action // self.board.shape[0], action % self.board.shape[0]
         cpy = self.board.copy()
         cpy[row, col] = self.curr_turn
-        self.curr_turn *= -1
         return State(cpy)
 
     def isLegalAction(self, action):
