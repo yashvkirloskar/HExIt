@@ -60,15 +60,15 @@ class CNN:
             mask = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size])
 
             output = tf.reshape(train_inputs, [2*self.batch_size, self.num_channels, self.input_width, self.input_height])
-            print ("************")
-            print (tf.shape(output))
+            # Put tensor in correct shape (NHWC)
+            output = tf.transpose(output, [0, 2, 3, 1])
+
             #Set up convolutional layers
             for i in range(1, 14):
                 output = self.buildConvolutionalOperation(output,self.conv_layer_depth, i)
-            print ("************")
-            print (tf.shape(output))
+
             # Put inputs in terms of player 1 and player 2
-            output = tf.reshape(output, [2, self.batch_size, self.conv_layer_depth, self.input_width-4, self.input_height-4])
+            output = tf.reshape(output, [2, self.batch_size, self.input_width-4, self.input_height-4, self.conv_layer_depth])
 			
             outputWhite = tf.gather(output, 0, axis=0)
             maskWhite = tf.gather(mask, 0, axis=0)
@@ -82,11 +82,11 @@ class CNN:
             outputP1 = self.buildFullyConnectedLayerWithSoftmax(outputWhite, self.output_size, maskWhite)
             outputP2 = self.buildFullyConnectedLayerWithSoftmax(outputBlack, self.output_size, maskBlack)
             # #Loss
-            lossWhite = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsWhite, outputWhite), axis=1))
-            lossBlack = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsBlack, outputBlack), axis=1))
+            lossP1 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsWhite, outputP1), axis=1))
+            lossP2 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsBlack, outputP2), axis=1))
 			
-            output = tf.stack((outputWhite, outputBlack), axis=0)
-            loss = tf.stack((lossWhite, lossBlack), axis=0)
+            output = tf.stack((outputP1, outputP2), axis=0)
+            loss = tf.stack((lossP1, lossP2), axis=0)
 
         return train_inputs, train_labels, mask, output, loss
 
@@ -125,11 +125,6 @@ class CNN:
 
     def train(self, inputs, labels, mask, batch_size):
         print("training-1")
-        #batch the input data
-        N = len(labels)
-        batched_inputs = np.split(inputs, N/batch_size)
-        batched_labels = np.split(labels, N/batch_size)
-
         #Add an op to optimize the loss
         optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(self.loss)
 
@@ -147,22 +142,14 @@ class CNN:
             print("training-4")
 
             average_loss = 0
-            for step in range(len(batched_inputs)):
 
-                inputs, labels = batched_inputs[step], batched_labels[step]
-                feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels, self.mask: mask}
-                print("training-5")
-                _, loss_val,output = session.run([optimize_op, self.loss, self.output], feed_dict=feed_dict)
-                print(output.shape)
-                average_loss += loss_val
-				# print(average_loss)
-                
-                if step % 2 == 0:
-                    if step > 0:
-                        average_loss /= 2
-                    # The average loss is an estimate of the loss over the last 2000 batches.
-                    print('Average loss at step ', step, ': ', average_loss)
-                    average_loss = 0
+            feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels, self.mask: mask}
+            print("training-5")
+            _, loss_val,output = session.run([optimize_op, self.loss, self.output], feed_dict=feed_dict)
+            print (loss_val.shape)
+            print (output.shape)
+            average_loss += loss_val
+            # print(average_loss)
 
 
 
