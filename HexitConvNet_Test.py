@@ -14,3 +14,7 @@ rand_labels = np.random.rand(2, batch_size, 25).astype(np.float32)
 rand_masks = np.random.rand(2, batch_size, 25).astype(np.float32)
 convnet = HexitConvNet.CNN((6,9,9), 25, 64, batch_size, "placeholder")
 convnet.train(rand_inputs, rand_labels, rand_masks, batch_size)
+print(convnet.predict(rand_inputs, rand_masks))
+
+
+#Now check to see if this works with a CNN

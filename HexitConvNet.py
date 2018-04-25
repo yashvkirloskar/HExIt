@@ -152,6 +152,20 @@ class CNN:
             # print(average_loss)
 
 
+    def predict(self, inputs, mask):
+        # Add an op to initialize the variables.
+        init_op = tf.global_variables_initializer()
+
+
+        with tf.Session() as session:
+            init_op.run()
+
+            feed_dict = {self.inputs_placeholder: inputs, self.mask: mask}
+
+            output = session.run([self.output], feed_dict=feed_dict)
+
+        return output
+
 
 
 
