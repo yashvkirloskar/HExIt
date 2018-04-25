@@ -3,23 +3,25 @@ import scipy as sp
 import tensorflow as tf 
 
 class CNN:
-	def __init__(self, input_shape, output_size, conv_layer_depth, name, step_size=1, mask=None):
+	def __init__(self, input_shape, output_size, conv_layer_depth, batch_size, name, step_size=1):
 		self.input_shape = input_shape
-		self.input_width = input_shape[0]
-		self.input_height = input_shape[1]
-		self.num_channels = input_shape[2]
+		self.num_channels = input_shape[0]
+		self.input_width = input_shape[1]
+		self.input_height = input_shape[2]
+		
+		self.batch_size = batch_size
 		self.output_size = output_size
 		self.conv_layer_depth = conv_layer_depth
 		self.strides = [1,1]
-		self.mask = mask
 
 		#include other relevant hyperparameters in the input for init 
 		self.step_size = step_size
 
 		#output of constructing computational graph
-		inputs_placeholder, labels_placeholder, ops, loss = self.buildGraph()
+		inputs_placeholder, labels_placeholder, mask, ops, loss = self.buildGraph()
 		self.inputs_placeholder = inputs_placeholder
 		self.labels_placeholder = labels_placeholder
+		self.mask = mask
 		self.output = ops
 		self.loss = loss
 
@@ -54,8 +56,10 @@ class CNN:
 		with tf.variable_scope("convnet_computationalgraph"):
 
 			#Setup placeholder for input
-			train_inputs = tf.placeholder(tf.float32, [None, self.input_width, self.input_height, self.num_channels])
-			train_labels = tf.placeholder(tf.float32, [None, self.output_size])
+			train_inputs = tf.placeholder(tf.float32, [self.batch_size, self.num_channels, self.input_width, self.input_height])
+			train_labels = tf.placeholder(tf.float32, [self.batch_size, self.output_size])
+			mask = tf.placeholder(tf.float32, [self.batch_size, self.output_size])
+
 			output = train_inputs
 	        
 			#Set up convolutional layers
@@ -65,19 +69,23 @@ class CNN:
 			#Fully connected layers - for now I am using masks of 1 just for the sake of building this
 			#TODO: change to using self.mask 
 
-			fc_output_size_1 = np.round(self.conv_layer_depth * (self.input_height-4) * (self.input_width-4) * 1/2).astype(int).item()
-			fc_mask_1 = tf.ones(tf.cast(tf.constant(fc_output_size_1), tf.int32))
-			output = self.buildFullyConnectedLayer(output, fc_output_size_1, fc_mask_1)
+			# fc_output_size_1 = np.round(self.conv_layer_depth * (self.input_height-4) * (self.input_width-4) * 1/2).astype(int).item()
+			# fc_mask_1 = tf.ones(tf.cast(tf.constant(fc_output_size_1), tf.int32))
+			# output = self.buildFullyConnectedLayer(output, fc_output_size_1, fc_mask_1)
 
-			fc_output_size_2 = self.output_size
-			fc_mask_2 = tf.ones(tf.cast(tf.constant(fc_output_size_2), tf.int32))
-			output = self.buildFullyConnectedLayer(output, fc_output_size_2, fc_mask_2)
+			# fc_output_size_2 = self.output_size
+			# fc_mask_2 = tf.ones(tf.cast(tf.constant(fc_output_size_2), tf.int32))
+			# output = self.buildFullyConnectedLayer(output, fc_output_size_2, fc_mask_2)
+
+			# Using a single FC layer loss
+			output = self.buildFullyConnectedLayerWithSoftmax(output, self.output_size, mask)
 
 			# #Loss
+			loss = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(train_labels, output), axis=1))
 			# loss = tf.reduce_mean(tf.scalar_mul(-1, tf.diag(tf.matmul(train_labels, tf.transpose(output)))))
-			loss = tf.reduce_sum(output)
+			# loss = tf.reduce_sum(output)
 
-		return train_inputs, train_labels, output, loss
+		return train_inputs, train_labels, mask, output, loss
 
 
 
@@ -103,16 +111,16 @@ class CNN:
 	conv_depth = number of filters
 	idx = the index of the layer 
 	'''
-	def buildFullyConnectedLayer(self, fc_input, output_size, fc_mask):
+	def buildFullyConnectedLayerWithSoftmax(self, fc_input, output_size, fc_mask):
 		input_shape = tf.shape(fc_input)
-		batch_size = input_shape[0]
 		rest = input_shape[1] * input_shape[2] * input_shape[3]
-		fc_input = tf.reshape(fc_input, [batch_size, rest])
-		output = tf.layers.dense(fc_input, output_size, activation=tf.nn.softmax)
-		output_masked = tf.multiply(output, fc_mask)
-		return output_masked
+		fc_input = tf.reshape(fc_input, [self.batch_size, rest])
+		output = tf.layers.dense(fc_input, output_size)
+		masked = tf.multiply(output, fc_mask)
+		output = tf.nn.softmax(masked, axis=1)
+		return output
 
-	def train(self, inputs, labels, batch_size):
+	def train(self, inputs, labels, mask, batch_size):
 		print("training-1")
 		#batch the input data
 		N = len(labels)
@@ -140,7 +148,7 @@ class CNN:
 			for step in range(len(batched_inputs)):
 
 				inputs, labels = batched_inputs[step], batched_labels[step]
-				feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels}
+				feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels, self.mask: mask}
 				print("training-5")
 				_, loss_val,output = session.run([optimize_op, self.loss, self.output], feed_dict=feed_dict)
 				print(output.shape)
