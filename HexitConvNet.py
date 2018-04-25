@@ -64,20 +64,18 @@ class CNN:
 
 			#Fully connected layers - for now I am using masks of 1 just for the sake of building this
 			#TODO: change to using self.mask 
-			cnn_last_layer = output
-			# fc_output_size_1 = np.round(self.conv_layer_depth * (self.input_height-4) * (self.input_width-4) * 1/2).astype(int).item()
-			# fc_mask_1 = tf.ones(tf.cast(tf.constant(fc_output_size_1), tf.int32))
-			# fc_output_1 = self.buildFullyConnectedLayer(outputs[-1], fc_output_size_1, fc_mask_1)
-			# outputs.append(fc_output_1)
 
-			# fc_output_size_2 = self.output_size
-			# fc_mask_2 = tf.ones(tf.cast(tf.constant(fc_output_size_2), tf.int32))
-			# fc_output_2 = self.buildFullyConnectedLayer(outputs[-1], fc_output_size_2, fc_mask_2)
-			# outputs.append(fc_output_2)
+			fc_output_size_1 = np.round(self.conv_layer_depth * (self.input_height-4) * (self.input_width-4) * 1/2).astype(int).item()
+			fc_mask_1 = tf.ones(tf.cast(tf.constant(fc_output_size_1), tf.int32))
+			output = self.buildFullyConnectedLayer(output, fc_output_size_1, fc_mask_1)
+
+			fc_output_size_2 = self.output_size
+			fc_mask_2 = tf.ones(tf.cast(tf.constant(fc_output_size_2), tf.int32))
+			output = self.buildFullyConnectedLayer(output, fc_output_size_2, fc_mask_2)
 
 			# #Loss
-			# loss = tf.reduce_mean(tf.scalar_mul(-1, tf.diag(tf.matmul(train_labels, tf.transpose(outputs[-1])))))
-			loss = tf.reduce_mean(cnn_last_layer)
+			# loss = tf.reduce_mean(tf.scalar_mul(-1, tf.diag(tf.matmul(train_labels, tf.transpose(output)))))
+			loss = tf.reduce_sum(output)
 
 		return train_inputs, train_labels, output, loss
 
@@ -106,37 +104,48 @@ class CNN:
 	idx = the index of the layer 
 	'''
 	def buildFullyConnectedLayer(self, fc_input, output_size, fc_mask):
+		input_shape = tf.shape(fc_input)
+		batch_size = input_shape[0]
+		rest = input_shape[1] * input_shape[2] * input_shape[3]
+		fc_input = tf.reshape(fc_input, [batch_size, rest])
 		output = tf.layers.dense(fc_input, output_size, activation=tf.nn.softmax)
 		output_masked = tf.multiply(output, fc_mask)
 		return output_masked
 
 	def train(self, inputs, labels, batch_size):
-
+		print("training-1")
 		#batch the input data
-		batched_inputs = tf.train.batch(inputs, batch_size)
-		batched_labels = tf.train.batch(labels, batch_size)
+		N = len(labels)
+		batched_inputs = np.split(inputs, N/batch_size)
+		batched_labels = np.split(labels, N/batch_size)
 
 
 		#Add an op to optimize the loss
 		optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(self.loss)
 
+		print("training-2")
 		# Add an op to initialize the variables.
 		init_op = tf.global_variables_initializer()
 
 		# Add ops to save and restore all the variables.
 		saver = tf.train.Saver()
 
+		print("training-3")
 		with tf.Session() as session:
 			init_op.run()
 
+			print("training-4")
+
 			average_loss = 0
 			for step in range(len(batched_inputs)):
-				inputs, labels = batched_inputs[step], batched_labels[step]
-				feed_dict = {self.inputs_placeholder: inputs.eval(), self.labels_placeholder: labels.eval()}
 
-				_, loss_val, = session.run([optimize_op, self.loss], feed_dict=feed_dict)
+				inputs, labels = batched_inputs[step], batched_labels[step]
+				feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels}
+				print("training-5")
+				_, loss_val,output = session.run([optimize_op, self.loss, self.output], feed_dict=feed_dict)
+				print(output.shape)
 				average_loss += loss_val
-				print(average_loss)
+				# print(average_loss)
 
 				if step % 2 == 0:
 					if step > 0:
