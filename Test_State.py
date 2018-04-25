@@ -69,7 +69,200 @@ complex_draw_white_move = State(np.array([[w,b,0,w,w],
 
 complex_draw_white_move_options = [2,6,9,10,13,22,23]
 
+test_channels = np.array([[w,b,w,b,b],
+                           [b,w,w,0,b],
+                            [w,w,b,w,b],
+                             [b,w,0,0,w],
+                              [b,b,b,w,w]])
 
+expected_channels = np.zeros((6, 9, 9))
+expected_channels[0] = np.array([[w,w,0,0,0,0,0,w,w],
+                                  [w,w,0,0,0,0,0,w,w],
+                                   [w,w,w,0,w,0,0,w,w],
+                                    [w,w,0,w,w,0,0,w,w],
+                                     [w,w,w,w,0,w,0,w,w],
+                                      [w,w,0,w,0,0,w,w,w],
+                                       [w,w,0,0,0,w,w,w,w],
+                                        [w,w,0,0,0,0,0,w,w],
+                                         [w,w,0,0,0,0,0,w,w]])
+expected_channels[1] = np.array([[b,b,b,b,b,b,b,b,b],
+                                  [b,b,b,b,b,b,b,b,b],
+                                   [0,0,0,b,0,b,b,0,0],
+                                    [0,0,b,0,0,0,b,0,0],
+                                     [0,0,0,0,b,0,b,0,0],
+                                      [0,0,b,0,0,0,0,0,0],
+                                       [0,0,b,b,b,0,0,0,0],
+                                        [b,b,b,b,b,b,b,b,b],
+                                         [b,b,b,b,b,b,b,b,b]])
+expected_channels[2] = np.array([[w,w,0,0,0,0,0,0,0],
+                                  [w,w,0,0,0,0,0,0,0],
+                                   [w,w,w,0,w,0,0,0,0],
+                                    [w,w,0,w,w,0,0,0,0],
+                                     [w,w,w,w,0,0,0,0,0],
+                                      [w,w,0,w,0,0,0,0,0],
+                                       [w,w,0,0,0,0,0,0,0],
+                                        [w,w,0,0,0,0,0,0,0],
+                                         [w,w,0,0,0,0,0,0,0]])
+expected_channels[3] = np.array([[0,0,0,0,0,0,0,w,w],
+                                  [0,0,0,0,0,0,0,w,w],
+                                   [0,0,0,0,0,0,0,w,w],
+                                    [0,0,0,0,0,0,0,w,w],
+                                     [0,0,0,0,0,0,0,w,w],
+                                      [0,0,0,0,0,0,w,w,w],
+                                       [0,0,0,0,0,w,w,w,w],
+                                        [0,0,0,0,0,0,0,w,w],
+                                         [0,0,0,0,0,0,0,w,w]])
+expected_channels[4] = np.array([[b,b,b,b,b,b,b,b,b],
+                                  [b,b,b,b,b,b,b,b,b],
+                                   [0,0,0,b,0,b,b,0,0],
+                                    [0,0,b,0,0,0,b,0,0],
+                                     [0,0,0,0,0,0,b,0,0],
+                                      [0,0,0,0,0,0,0,0,0],
+                                       [0,0,0,0,0,0,0,0,0],
+                                        [0,0,0,0,0,0,0,0,0],
+                                         [0,0,0,0,0,0,0,0,0]])
+expected_channels[5] = np.array([[0,0,0,0,0,0,0,0,0],
+                                  [0,0,0,0,0,0,0,0,0],
+                                   [0,0,0,0,0,0,0,0,0],
+                                    [0,0,0,0,0,0,0,0,0],
+                                     [0,0,0,0,0,0,0,0,0],
+                                      [0,0,b,0,0,0,0,0,0],
+                                       [0,0,b,b,b,0,0,0,0],
+                                        [b,b,b,b,b,b,b,b,b],
+                                         [b,b,b,b,b,b,b,b,b]])
+expected_channels = np.fabs(expected_channels)
+channelTest = State(test_channels)
+
+
+test_channels_win_white = np.array([[0,b,b,w,w],
+                                     [b,w,w,b,b],
+                                      [w,w,b,w,b],
+                                       [b,w,0,0,w],
+                                        [b,b,b,w,w]])
+
+expected_channels_win_white = np.zeros((6, 9, 9))
+expected_channels_win_white[0] = np.array([[w,w,0,0,0,0,0,w,w],
+                                            [w,w,0,0,0,0,0,w,w],
+                                             [w,w,0,0,0,w,w,w,w],
+                                              [w,w,0,w,w,0,0,w,w],
+                                               [w,w,w,w,0,w,0,w,w],
+                                                [w,w,0,w,0,0,w,w,w],
+                                                 [w,w,0,0,0,w,w,w,w],
+                                                  [w,w,0,0,0,0,0,w,w],
+                                                   [w,w,0,0,0,0,0,w,w]])
+expected_channels_win_white[1] = np.array([[b,b,b,b,b,b,b,b,b],
+                                            [b,b,b,b,b,b,b,b,b],
+                                             [0,0,0,b,b,0,0,0,0],
+                                              [0,0,b,0,0,b,b,0,0],
+                                               [0,0,0,0,b,0,b,0,0],
+                                                [0,0,b,0,0,0,0,0,0],
+                                                 [0,0,b,b,b,0,0,0,0],
+                                                  [b,b,b,b,b,b,b,b,b],
+                                                   [b,b,b,b,b,b,b,b,b]])
+expected_channels_win_white[2] = np.array([[w,w,0,0,0,0,0,w,w],
+                                            [w,w,0,0,0,0,0,w,w],
+                                             [w,w,0,0,0,w,w,w,w],
+                                              [w,w,0,w,w,0,0,w,w],
+                                               [w,w,w,w,0,0,0,w,w],
+                                                [w,w,0,w,0,0,w,w,w],
+                                                 [w,w,0,0,0,w,w,w,w],
+                                                  [w,w,0,0,0,0,0,w,w],
+                                                   [w,w,0,0,0,0,0,w,w]])
+expected_channels_win_white[3] = np.array([[w,w,0,0,0,0,0,w,w],
+                                            [w,w,0,0,0,0,0,w,w],
+                                             [w,w,0,0,0,w,w,w,w],
+                                              [w,w,0,w,w,0,0,w,w],
+                                               [w,w,w,w,0,0,0,w,w],
+                                                [w,w,0,w,0,0,w,w,w],
+                                                 [w,w,0,0,0,w,w,w,w],
+                                                  [w,w,0,0,0,0,0,w,w],
+                                                   [w,w,0,0,0,0,0,w,w]])
+expected_channels_win_white[4] = np.array([[b,b,b,b,b,b,b,b,b],
+                                            [b,b,b,b,b,b,b,b,b],
+                                             [0,0,0,b,b,0,0,0,0],
+                                              [0,0,b,0,0,0,0,0,0],
+                                               [0,0,0,0,0,0,0,0,0],
+                                                [0,0,0,0,0,0,0,0,0],
+                                                 [0,0,0,0,0,0,0,0,0],
+                                                  [0,0,0,0,0,0,0,0,0],
+                                                   [0,0,0,0,0,0,0,0,0]])
+expected_channels_win_white[5] = np.array([[0,0,0,0,0,0,0,0,0],
+                                            [0,0,0,0,0,0,0,0,0],
+                                             [0,0,0,0,0,0,0,0,0],
+                                              [0,0,0,0,0,0,0,0,0],
+                                               [0,0,0,0,0,0,0,0,0],
+                                                [0,0,b,0,0,0,0,0,0],
+                                                 [0,0,b,b,b,0,0,0,0],
+                                                  [b,b,b,b,b,b,b,b,b],
+                                                   [b,b,b,b,b,b,b,b,b]])
+expected_channels_win_white = np.fabs(expected_channels_win_white)
+channelTest_win_white = State(test_channels_win_white)
+
+
+test_channels_win_black = np.array([[w,0,b,w,w],
+                                     [b,w,b,b,b],
+                                      [w,w,b,w,0],
+                                       [b,b,w,0,b],
+                                        [b,b,w,w,w]])
+
+expected_channels_win_black = np.zeros((6, 9, 9))
+expected_channels_win_black[0] = np.array([[w,w,0,0,0,0,0,w,w],
+                                            [w,w,0,0,0,0,0,w,w],
+                                             [w,w,w,0,0,w,w,w,w],
+                                              [w,w,0,w,0,0,0,w,w],
+                                               [w,w,w,w,0,w,0,w,w],
+                                                [w,w,0,0,w,0,0,w,w],
+                                                 [w,w,0,0,w,w,w,w,w],
+                                                  [w,w,0,0,0,0,0,w,w],
+                                                   [w,w,0,0,0,0,0,w,w]])
+expected_channels_win_black[1] = np.array([[b,b,b,b,b,b,b,b,b],
+                                            [b,b,b,b,b,b,b,b,b],
+                                             [0,0,0,0,b,0,0,0,0],
+                                              [0,0,b,0,b,b,b,0,0],
+                                               [0,0,0,0,b,0,0,0,0],
+                                                [0,0,b,b,0,0,b,0,0],
+                                                 [0,0,b,b,0,0,0,0,0],
+                                                  [b,b,b,b,b,b,b,b,b],
+                                                   [b,b,b,b,b,b,b,b,b]])
+expected_channels_win_black[2] = np.array([[w,w,0,0,0,0,0,0,0],
+                                            [w,w,0,0,0,0,0,0,0],
+                                             [w,w,w,0,0,0,0,0,0],
+                                              [w,w,0,w,0,0,0,0,0],
+                                               [w,w,w,w,0,0,0,0,0],
+                                                [w,w,0,0,0,0,0,0,0],
+                                                 [w,w,0,0,0,0,0,0,0],
+                                                  [w,w,0,0,0,0,0,0,0],
+                                                   [w,w,0,0,0,0,0,0,0]])
+expected_channels_win_black[3] = np.array([[0,0,0,0,0,0,0,w,w],
+                                            [0,0,0,0,0,0,0,w,w],
+                                             [0,0,0,0,0,w,w,w,w],
+                                              [0,0,0,0,0,0,0,w,w],
+                                               [0,0,0,0,0,w,0,w,w],
+                                                [0,0,0,0,w,0,0,w,w],
+                                                 [0,0,0,0,w,w,w,w,w],
+                                                  [0,0,0,0,0,0,0,w,w],
+                                                   [0,0,0,0,0,0,0,w,w]])
+expected_channels_win_black[4] = np.array([[b,b,b,b,b,b,b,b,b],
+                                            [b,b,b,b,b,b,b,b,b],
+                                             [0,0,0,0,b,0,0,0,0],
+                                              [0,0,0,0,b,b,b,0,0],
+                                               [0,0,0,0,b,0,0,0,0],
+                                                [0,0,b,b,0,0,0,0,0],
+                                                 [0,0,b,b,0,0,0,0,0],
+                                                  [b,b,b,b,b,b,b,b,b],
+                                                   [b,b,b,b,b,b,b,b,b]])
+expected_channels_win_black[5] = np.array([[b,b,b,b,b,b,b,b,b],
+                                            [b,b,b,b,b,b,b,b,b],
+                                             [0,0,0,0,b,0,0,0,0],
+                                              [0,0,0,0,b,b,b,0,0],
+                                               [0,0,0,0,b,0,0,0,0],
+                                                [0,0,b,b,0,0,0,0,0],
+                                                 [0,0,b,b,0,0,0,0,0],
+                                                  [b,b,b,b,b,b,b,b,b],
+                                                   [b,b,b,b,b,b,b,b,b]])
+
+expected_channels_win_black = np.fabs(expected_channels_win_black)
+channelTest_win_black = State(test_channels_win_black)
 
 def testWinner():
     # create an empty board, make sure winner is 0
@@ -192,6 +385,22 @@ def testNonTerminalActions():
     print("testNonTerminalActions passed")
     return
 
+def testChannelsFromState():
+    test = channelTest.channels_from_state()
+    for i in range(6):
+        
+        assert(np.array_equal(test[i], expected_channels[i]))
+
+    test_win_white = channelTest_win_white.channels_from_state()
+    for i in range(6):
+        assert(np.array_equal(test_win_white[i], expected_channels_win_white[i]))
+
+    test_win_black = channelTest_win_black.channels_from_state()
+    for i in range(6):
+        assert(np.array_equal(test_win_black[i], expected_channels_win_black[i]))
+    print ("testChannelsFromState passed")
+
+
 def main():
     print ("Testing State class...")
     testWinner()
@@ -203,7 +412,7 @@ def main():
     testChooseRandomAction()
     testTurn()
     testNonTerminalActions()
-
+    testChannelsFromState()
     print ("All tests passed!")
 
 if __name__ == '__main__':

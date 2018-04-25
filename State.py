@@ -89,24 +89,32 @@ class State:
         return nta
 
     def channels_from_state(self):
-        output = np.zeros(6, self.board.shape[0]+4, self.board.shape[0]+4)
+        output = np.zeros((6, self.board.shape[0]+4, self.board.shape[0]+4))
         # First layer: All locations of white stones (P1 locations)
         output[0, :, 0:2] = 1
         output[0, :, -2:] = 1
         output[0, 2:-2, 2:-2] = (self.board==1)*self.board
     
         # Second layer: All locations of black stones (P2 locations)
-        output[1, 0:2, :] = 1
-        output[1, -2:, :] = 1
-        output[1, 2:-2, 2:-2] = (self.board==-1)*self.board*-1
+        output[1, 0:2, :] = -1
+        output[1, -2:, :] = -1
+        output[1, 2:-2, 2:-2] = (self.board==-1)*self.board
 
         # Third layer: White Stones connected to West Edge (left side)
-        output[2, 0:2, :] = 1
-        output[2, 2:-2, 2:-2] = self.board * bfs_right(self.board, self.board.size[0])
+        output[2] = output[0] * bfs_right(output[0], output[0].shape[0])
 
-        output[3, -2:, :] = 1
-        output[4, 0:2, :] = 1
-        output[5, -2:, :] = 1
+        # Fourth Layer: White Stones connected to East edge(right side)
+        output[3] = output[0] * bfs_left(output[0], output[0].shape[0])
+
+        # Fifth Layer: Black Stones connected to North edge (top side)
+        output[4] = output[1]*bfs_down(output[1], output[1].shape[0])
+
+        # Sixth Layer: Black stones connected to South edge (bottom side)
+        output[5] = output[1]*bfs_up(output[1], output[1].shape[0])
+
+        output[1] = np.square(output[1])
+
+        return output
 
 # to test, we will use a tic tac toe board
 class TestState:

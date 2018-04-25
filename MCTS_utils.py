@@ -1,7 +1,6 @@
 import util
 import numpy as np
 from State import State, TestState
-from MCTS import MCTS
 from MCTS_Tree import MCTS_Tree, MCTS_Node
 import random, math
 from scipy.special import comb
@@ -51,3 +50,8 @@ def generateRandomState(size, turn):
 
     return board
     
+def board_from_channels(channels):
+    whites = channels[0]
+    blacks = channels[1] + np.ones_like(channels[1])*(channels[1] == 1)
+    board = whites+blacks
+    return board[2:-2, 2:-2]

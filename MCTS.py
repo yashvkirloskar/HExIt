@@ -3,7 +3,7 @@ import numpy as np
 from MCTS_Tree import MCTS_Tree, MCTS_Node
 from State import State
 from MCTS_utils import *
-
+import time
 
 class MCTS:
 	#uct_new(s,a) = uct(s,a) + w_a * (apprentice_policy(s,a) / n(s,a) + 1)
@@ -65,37 +65,46 @@ class MCTS:
 	# Returns a np array of shape [2, batch_size, 6, 5, 5] of input data for white and black
 	# and a np array of shape [2, batch_size, 25] for white and black
 	# Takes in one output for distributions and one for inputs
-	def generateExpertBatch(self, outFile1, outFile2):
+	def generateExpertBatch(self, outFile1=None, outFile2=None):
 		p1States = []
 		p2States = []
 		# Generate BATCH_SIZE number of random states for each player
+		start = time.time()
 		for i in range(self.batch_size):
 			p1States.append(generateRandomState(self.size, 1))
 		for i in range(self.batch_size):
 			p2States.append(generateRandomState(self.size, -1))
-		
+		end = time.time()
+		print ("Time to generate 512 random states: ", (end-start))
+
+		start = time.time()
 		# We don't care about P2's action distribution, and the last column of -1's is unnecessary  
 		p1DataBatch = self.generateDataBatch(p1States)[0:2]
-		p1DataBatch[1] = p1DataBatch[1][:, :-1]
+		p1Dist = p1DataBatch[1][:, :-1]
 
 		p2DataBatch = self.generateDataBatch(p2States)[0:3:2]
-		p2DataBatch[1] = p2DataBatch[1][:, :-1]
+		p2Dist = p2DataBatch[1][:, :-1]
 
-		input_data = np.zeros[2, self.batch_size, 6, self.size, self.size]
+		input_data = np.zeros((2, self.batch_size, 6, self.size+4, self.size+4))
 
-		distributions = np.zeros[2, self.batch_size, self.num_actions]
-		distributions[0] = p1DataBatch[1]
-		distributions[1] = p2DataBatch[1]
+		distributions = np.zeros((2, self.batch_size, self.num_actions))
+		distributions[0] = p1Dist
+		distributions[1] = p2Dist
+		end = time.time()
+		print ("Time to do MCTS: ", (end-start))
+
+
+		start = time.time()
+		for i in range(self.batch_size):
+			input_data[0, i] = p1DataBatch[0][i].channels_from_state()
 
 		for i in range(self.batch_size):
-			input_data[0, i] = channels_from_state(p1DataBatch[0][i])
-
-		for i in range(self.batch_size):
-			input_data[1, i] = channels_from_state(p2DataBatch[0][i])
-
-		np.save(outFile1, input_data)
-		np.save(outFile2, distributions)
-
+			input_data[1, i] = p2DataBatch[0][i].channels_from_state()
+		if outFile1 is not None and outFile2 is not None:
+			np.save(outFile1, input_data)
+			np.save(outFile2, distributions)
+		end = time.time()
+		print ("Time to create inputs for apprentice: ", (end-start))
 		return (input_data, distributions)
 
 
