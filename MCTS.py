@@ -36,13 +36,19 @@ class MCTS:
 		action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 
+		# run all the starting states through the apprentice as once
+		root_action_distributions = [None for i in range(self.num_actions)]
+		if self.apprentice is not None:
+			root_action_distributions = self.apprentice.getActionDistribution(starting_states)
+			# this is a [batch_size, num_actions] shaped matrix
+
 		for i, state in enumerate(starting_states):
 			print("i:", i)
 			if state.isPlayerOneTurn():
-				action_distribution1[i][0:self.num_actions] = self.runSimulations(state)
+				action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
 				action_distribution2[i][-1] = 1
 			else:
-				action_distribution2[i][0:self.num_actions] = self.runSimulations(state)
+				action_distribution2[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
 				action_distribution1[i][-1] = 1
 
 		return (starting_states, action_distribution1, action_distribution2)
@@ -53,10 +59,10 @@ class MCTS:
 	# Each element is a probability (between 0 and 1).
 	# The i-th element is the number of times we took the i-th action from the root state (as a probability).
 	# The last element is the number of times we took no action (if it wasn't this player's turn.)
-	def runSimulations(self, start_state):
+	def runSimulations(self, start_state, root_action_distribution):
 
 		# Initialize new tree
-		self.tree = MCTS_Tree(start_state, self.num_actions, max_depth=self.max_depth, apprentice=self.apprentice)
+		self.tree = MCTS_Tree(start_state, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice)
 		for t in range(self.simulations_per_state):
 			self.tree.runSingleSimulation()
 
@@ -82,8 +88,10 @@ class MCTS:
 		p1DataBatch = self.generateDataBatch(p1States)[0:2]
 		p1Dist = p1DataBatch[1][:, :-1]
 
+
 		p2DataBatch = self.generateDataBatch(p2States)[0:3:2]
 		p2Dist = p2DataBatch[1][:, :-1]
+
 
 		input_data = np.zeros((2, self.batch_size, 6, self.size+4, self.size+4))
 

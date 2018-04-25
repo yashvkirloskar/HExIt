@@ -13,11 +13,13 @@ def action_string(action):
 
 
 class MCTS_Tree:
-	def __init__(self, start_state, num_actions, max_depth=6, apprentice=None):
+	def __init__(self, start_state, num_actions, root_action_distribution, max_depth=6, apprentice=None):
 		self.start_state = start_state
 		self.action_counts = np.zeros(num_actions)
-		self.root = MCTS_Node(start_state, num_actions, max_depth=max_depth, apprentice=apprentice)
+		self.root = MCTS_Node(start_state, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
+
 		self.apprentice = apprentice
+		self.root_action_distribution = root_action_distribution
 
 	# Runs a single simulation starting from the root
 	# Update the action_counts array
@@ -34,7 +36,7 @@ class MCTS_Tree:
 
 
 class MCTS_Node:
-	def __init__(self, state, num_actions, parent=None, max_depth=6, apprentice=None):
+	def __init__(self, state, num_actions, parent=None, max_depth=6, apprentice=None, isRoot=False, root_action_distribution=None):
 		self.state = state
 		self.num_actions = num_actions
 		self.parent = parent
@@ -52,6 +54,9 @@ class MCTS_Node:
 		self.c_b = 3 # Needs tuning, coefficient for the term in UCT meant to incentivize exploration of never before seen moves
 		self.w_a = 40 # Needs tuning, coefficient for influence of apprentice in UCT (should be roughly avg # simulations per action at root)
 		self.epsilon = 1e-8 # To prevent division by 0 in UCT calculation
+
+		self.isRoot = isRoot
+		self.root_action_distribution = root_action_distribution
 
 	def __repr__(self):
 		s = self.state.__repr__()# + "R(S, A): " + str(self.outgoing_edge_rewards) + "\nN(S, A): " + str(self.outgoing_edge_traversals) + "\nN(S): " + str(self.node_visits)
@@ -138,24 +143,21 @@ class MCTS_Node:
 
 		apprentice_term = np.zeros(self.num_actions)
 		if self.apprentice is not None:
-			numer = self.apprentice.getActionDistribution(self.state) # vector
+			if self.isRoot:
+				numer = self.root_action_distribution
+			else:
+				numer = self.apprentice.getActionDistribution(self.state) # vector
 			denom = self.outgoing_edge_traversals + 1 # vector
 			apprentice_term = self.w_a * (numer/denom)
 
 		uct_new = uct + apprentice_term
 
-		i = 0
-		while i < self.num_actions:
-			best_action = np.argmax(uct_new)
-			if self.state.isLegalAction(best_action):
-				return best_action
-			else:
-				uct_new[best_action] = np.min(uct_new) - 1
-			i += 1
+		# generate mask (0 if illegal, 1 if legal)
+		legal_actions = self.state.legalActions()
+		mask = np.array([(1 if action in legal_actions else 0) for action in range(25)])
+		legal_ucts = uct_new * mask
 
-		# if we're down here, something went wrong, just push the problem to chooseRandomAction because meh
-		return self.state.chooseRandomAction()
-
+		return np.argmax(legal_ucts)
 
 
 	def computeUct(self):
