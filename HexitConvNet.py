@@ -18,14 +18,6 @@ class CNN:
         #include other relevant hyperparameters in the input for init 
         self.step_size = step_size
 
-        # #output of constructing computational graph
-        # inputs_placeholder, labels_placeholder, mask, ops, loss = self.buildGraph()
-        # self.inputs_placeholder = inputs_placeholder
-        # self.labels_placeholder = labels_placeholder
-        # self.mask = mask
-        # self.output = ops
-        # self.loss = loss
-
         #name used for saving and restoring
         self.name = name
 
@@ -130,7 +122,7 @@ class CNN:
         output = tf.nn.softmax(masked, axis=1)
         return output
 
-    def train(self, inputs, labels, mask, batch_size):
+    def train(self, inputs, labels, mask):
 
 
         if(os.path.exists(self.name + "/convnet.meta")):
@@ -173,7 +165,7 @@ class CNN:
                 init_op = tf.global_variables_initializer()
 
                 #Add an op to optimize the loss
-                optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+                optimize_op = tf.train.GradientDescentOptimizer(self.step_size).minimize(loss)
 
 
                 # Add ops to save and restore all the variables.
