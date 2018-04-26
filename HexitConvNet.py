@@ -1,9 +1,10 @@
 import numpy as np 
 import scipy as sp 
 import tensorflow as tf 
+import os
 
 class CNN:
-    def __init__(self, input_shape, output_size, conv_layer_depth, batch_size, name, step_size=1):
+    def __init__(self, input_shape, output_size, conv_layer_depth, batch_size, name,  step_size=1):
         self.input_shape = input_shape
         self.num_channels = input_shape[0]
         self.input_width = input_shape[1]
@@ -17,13 +18,16 @@ class CNN:
         #include other relevant hyperparameters in the input for init 
         self.step_size = step_size
 
-        #output of constructing computational graph
-        inputs_placeholder, labels_placeholder, mask, ops, loss = self.buildGraph()
-        self.inputs_placeholder = inputs_placeholder
-        self.labels_placeholder = labels_placeholder
-        self.mask = mask
-        self.output = ops
-        self.loss = loss
+        # #output of constructing computational graph
+        # inputs_placeholder, labels_placeholder, mask, ops, loss = self.buildGraph()
+        # self.inputs_placeholder = inputs_placeholder
+        # self.labels_placeholder = labels_placeholder
+        # self.mask = mask
+        # self.output = ops
+        # self.loss = loss
+
+        #name used for saving and restoring
+        self.name = name
 
 
 
@@ -53,40 +57,43 @@ class CNN:
     '''
     def buildGraph(self):
 
-        with tf.variable_scope("convnet_computationalgraph"):
+        # with tf.variable_scope("convnet_computationalgraph"):
             #Setup placeholder for input
-            train_inputs = tf.placeholder(tf.float32, [2, self.batch_size, self.num_channels, self.input_width, self.input_height])
-            train_labels = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size])
-            mask = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size])
+        train_inputs = tf.placeholder(tf.float32, [2, self.batch_size, self.num_channels, self.input_width, self.input_height], name="inputs")
+        train_labels = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size], name="labels")
+        mask = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size], name="mask")
 
-            output = tf.reshape(train_inputs, [2*self.batch_size, self.num_channels, self.input_width, self.input_height])
-            # Put tensor in correct shape (NHWC)
-            output = tf.transpose(output, [0, 2, 3, 1])
+        output = tf.reshape(train_inputs, [2*self.batch_size, self.num_channels, self.input_width, self.input_height])
+        # Put tensor in correct shape (NHWC)
+        output = tf.transpose(output, [0, 2, 3, 1])
 
-            #Set up convolutional layers
-            for i in range(1, 14):
-                output = self.buildConvolutionalOperation(output,self.conv_layer_depth, i)
+        #Set up convolutional layers
+        for i in range(1, 14):
+            output = self.buildConvolutionalOperation(output,self.conv_layer_depth, i)
 
-            # Put inputs in terms of player 1 and player 2
-            output = tf.reshape(output, [2, self.batch_size, self.input_width-4, self.input_height-4, self.conv_layer_depth])
-			
-            outputWhite = tf.gather(output, 0, axis=0)
-            maskWhite = tf.gather(mask, 0, axis=0)
-            labelsWhite = tf.gather(train_labels, 0, axis=0)
+        # Put inputs in terms of player 1 and player 2
+        output = tf.reshape(output, [2, self.batch_size, self.input_width-4, self.input_height-4, self.conv_layer_depth])
+		
+        outputWhite = tf.gather(output, 0, axis=0)
+        maskWhite = tf.gather(mask, 0, axis=0)
+        labelsWhite = tf.gather(train_labels, 0, axis=0)
 
-            outputBlack = tf.gather(output, 1, axis=0) 
-            maskBlack = tf.gather(mask, 0, axis=0)
-            labelsBlack = tf.gather(train_labels, 0, axis=0)
+        outputBlack = tf.gather(output, 1, axis=0) 
+        maskBlack = tf.gather(mask, 0, axis=0)
+        labelsBlack = tf.gather(train_labels, 0, axis=0)
 
-            # Using a single FC layer loss
-            outputP1 = self.buildFullyConnectedLayerWithSoftmax(outputWhite, self.output_size, maskWhite)
-            outputP2 = self.buildFullyConnectedLayerWithSoftmax(outputBlack, self.output_size, maskBlack)
-            # #Loss
-            lossP1 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsWhite, outputP1), axis=1))
-            lossP2 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsBlack, outputP2), axis=1))
-			
-            output = tf.stack((outputP1, outputP2), axis=0)
-            loss = tf.stack((lossP1, lossP2), axis=0)
+        # Using a single FC layer loss
+        outputP1 = self.buildFullyConnectedLayerWithSoftmax(outputWhite, self.output_size, maskWhite)
+        outputP2 = self.buildFullyConnectedLayerWithSoftmax(outputBlack, self.output_size, maskBlack)
+
+        # #Loss
+        lossP1 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsWhite, outputP1), axis=1))
+        lossP2 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsBlack, outputP2), axis=1))
+		
+        output = tf.stack((outputP1, outputP2), axis=0)
+        output = tf.identity(output, name="output")
+        loss = tf.stack((lossP1, lossP2), axis=0)
+        loss = tf.identity(loss, name="loss")
 
         return train_inputs, train_labels, mask, output, loss
 
@@ -124,49 +131,83 @@ class CNN:
         return output
 
     def train(self, inputs, labels, mask, batch_size):
-        print("training-1")
-        #Add an op to optimize the loss
-        optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(self.loss)
 
-        print("training-2")
+
+        if(os.path.exists(self.name + "/convnet.meta")):
+            saver = tf.train.import_meta_graph(self.name + "/convnet.meta")
+
+            print("starting training from last checkpoint")
+
+            with tf.Session() as session:
+                #init_op.run()
+
+                #Restore the old graph and get relevant ops / variables
+                #saver = tf.train.import_meta_graph(self.name + '.meta')
+                saver.restore(session,tf.train.latest_checkpoint(self.name))
+                graph = tf.get_default_graph()
+                input_op = graph.get_tensor_by_name("inputs:0")
+                predict_mask = graph.get_tensor_by_name("mask:0")
+
+                predict_labels = graph.get_tensor_by_name("labels:0")
+                feed_dict = {input_op:inputs, predict_mask:mask, predict_labels:labels}
+                op_to_restore = graph.get_tensor_by_name("output:0")
+                loss = graph.get_tensor_by_name("loss:0")
+
+                #Add an op to optimize the loss
+                #optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+                optimize_op = tf.get_collection('optimizer')[0]
+                _,loss_val, output = session.run([optimize_op, loss, op_to_restore], feed_dict=feed_dict)
+                total_loss = loss_val
+                save_path = saver.save(session, self.name +  "/" + "convnet")
+
+
+        else:
+            print("no saved graph, building a new one")
+
+            new_graph = tf.Graph()
+            with tf.Session(graph=new_graph) as session:
+
+                inputs_placeholder, labels_placeholder, mask_placeholder, ops, loss = self.buildGraph()
+
+                # Add an op to initialize the variables.
+                init_op = tf.global_variables_initializer()
+
+                #Add an op to optimize the loss
+                optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+
+
+                # Add ops to save and restore all the variables.
+                saver = tf.train.Saver()
+
+                tf.add_to_collection("optimizer", optimize_op)
+
+                init_op.run()
+                feed_dict = {inputs_placeholder: inputs, labels_placeholder: labels, mask_placeholder: mask}
+                session.run(optimize_op, feed_dict=feed_dict)
+                save_path = saver.save(session, self.name +  "/" + "convnet")
+
+            
+
+
+
+    def predict(self, predict_input, predict_mask):
         # Add an op to initialize the variables.
         init_op = tf.global_variables_initializer()
-
-        # Add ops to save and restore all the variables.
-        saver = tf.train.Saver()
-
-        print("training-3")
+    
         with tf.Session() as session:
             init_op.run()
 
-            print("training-4")
-
-            average_loss = 0
-
-            feed_dict = {self.inputs_placeholder: inputs, self.labels_placeholder: labels, self.mask: mask}
-            print("training-5")
-            _, loss_val,output = session.run([optimize_op, self.loss, self.output], feed_dict=feed_dict)
-            print (loss_val.shape)
-            print (output.shape)
-            average_loss += loss_val
-            # print(average_loss)
+            #Restore the old graph and get relevant ops / variables
+            saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
+            saver.restore(session,tf.train.latest_checkpoint(self.name))
+            graph = tf.get_default_graph()
+            inputs = graph.get_tensor_by_name("inputs:0")
+            mask = graph.get_tensor_by_name("mask:0")
+            feed_dict = {inputs: predict_input, mask: predict_mask}
+            op_to_restore = graph.get_tensor_by_name("output:0")
 
 
-    def predict(self, inputs, mask):
-        # Add an op to initialize the variables.
-        init_op = tf.global_variables_initializer()
-
-
-        with tf.Session() as session:
-            init_op.run()
-
-            feed_dict = {self.inputs_placeholder: inputs, self.mask: mask}
-
-            output = session.run([self.output], feed_dict=feed_dict)
+            output = session.run([op_to_restore], feed_dict=feed_dict)
 
         return output
-
-
-
-
 
