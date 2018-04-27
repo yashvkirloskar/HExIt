@@ -126,31 +126,60 @@ class CNN:
 
 
         if(os.path.exists(self.name + "/convnet.meta")):
-            saver = tf.train.import_meta_graph(self.name + "/convnet.meta")
 
-            print("starting training from last checkpoint")
+            # # Add an op to initialize the variables.
+            # init_op = tf.global_variables_initializer()
 
+            # print("starting training from last checkpoint")
+
+            # with tf.Session() as session:
+            #     init_op.run()
+
+            #     #Restore the old graph and get relevant ops / variables
+            #     saver = tf.train.import_meta_graph(self.name + "/convnet.meta")
+            #     saver.restore(session,tf.train.latest_checkpoint(self.name))
+            #     graph = tf.get_default_graph()
+            #     input_op = graph.get_tensor_by_name("inputs:0")
+            #     predict_mask = graph.get_tensor_by_name("mask:0")
+
+            #     predict_labels = graph.get_tensor_by_name("labels:0")
+            #     feed_dict = {input_op:inputs, predict_mask:mask, predict_labels:labels}
+            #     op_to_restore = graph.get_tensor_by_name("output:0")
+            #     loss = graph.get_tensor_by_name("loss:0")
+
+            #     #Add an op to optimize the loss
+            #     #optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+            #     optimize_op = tf.get_collection('optimizer')[0]
+            #     _,loss_val, output = session.run([optimize_op, loss, op_to_restore], feed_dict=feed_dict)
+            #     total_loss = loss_val
+            #     save_path = saver.save(session, self.name +  "/" + "convnet")
+
+                    # Add an op to initialize the variables.
+            init_op = tf.global_variables_initializer()
+        
             with tf.Session() as session:
-                #init_op.run()
 
                 #Restore the old graph and get relevant ops / variables
-                #saver = tf.train.import_meta_graph(self.name + '.meta')
+                saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
                 saver.restore(session,tf.train.latest_checkpoint(self.name))
                 graph = tf.get_default_graph()
                 input_op = graph.get_tensor_by_name("inputs:0")
-                predict_mask = graph.get_tensor_by_name("mask:0")
-
-                predict_labels = graph.get_tensor_by_name("labels:0")
-                feed_dict = {input_op:inputs, predict_mask:mask, predict_labels:labels}
-                op_to_restore = graph.get_tensor_by_name("output:0")
-                loss = graph.get_tensor_by_name("loss:0")
-
-                #Add an op to optimize the loss
-                #optimize_op = tf.train.GradientDescentOptimizer(1.0).minimize(loss)
+                mask_op = graph.get_tensor_by_name("mask:0")
+                output_op = graph.get_tensor_by_name("output:0")
+                labels_op = graph.get_tensor_by_name("labels:0")
+                loss_op = graph.get_tensor_by_name("loss:0")
                 optimize_op = tf.get_collection('optimizer')[0]
-                _,loss_val, output = session.run([optimize_op, loss, op_to_restore], feed_dict=feed_dict)
+                feed_dict = {input_op:inputs, mask_op:mask, labels_op:labels}
+
+                #initialize variables
+                init_op.run()
+
+                _,loss_val, output = session.run([optimize_op, loss_op, output_op], feed_dict=feed_dict)
                 total_loss = loss_val
                 save_path = saver.save(session, self.name +  "/" + "convnet")
+
+
+            # output = session.run([op_to_restore], feed_dict=feed_dict)
 
 
         else:
@@ -194,7 +223,6 @@ class CNN:
         init_op = tf.global_variables_initializer()
     
         with tf.Session() as session:
-            init_op.run()
 
             #Restore the old graph and get relevant ops / variables
             saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
@@ -204,6 +232,8 @@ class CNN:
             mask = graph.get_tensor_by_name("mask:0")
             feed_dict = {inputs: predict_input, mask: predict_mask}
             op_to_restore = graph.get_tensor_by_name("output:0")
+
+            init_op.run()
 
 
             output = session.run([op_to_restore], feed_dict=feed_dict)

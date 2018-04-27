@@ -59,7 +59,7 @@ print(np.array_equal(output3, output2))
 print ("===============PRINT OUTPUT3=================")
 print (len(output3))
 print (output3[0].shape)
-print (output3[0][0,0,0])
+print (output3)
 #####################################################################
 
 
@@ -73,7 +73,7 @@ output4 = convnet.predict(copy.deepcopy(rand_inputs2),rand_masks)
 print ("===========OUTPUT4=============")
 print (len(output4))
 print (output4[0].shape)
-print (output4[0][0,0,0])
+print (output4)
 
 convnet3 = HexitConvNet.CNN((6,9,9), 25, 64, batch_size, "test_dir2")
 convnet3.train(rand_inputs3, rand_labels3, rand_masks)
