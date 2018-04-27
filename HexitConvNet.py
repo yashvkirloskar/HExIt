@@ -220,7 +220,7 @@ class CNN:
 
     def predict(self, predict_input, predict_mask):
         # Add an op to initialize the variables.
-        init_op = tf.global_variables_initializer()
+        # init_op = tf.global_variables_initializer()
     
         with tf.Session() as session:
 
@@ -233,7 +233,7 @@ class CNN:
             feed_dict = {inputs: predict_input, mask: predict_mask}
             op_to_restore = graph.get_tensor_by_name("output:0")
 
-            init_op.run()
+            # init_op.run()
 
 
             output = session.run([op_to_restore], feed_dict=feed_dict)
