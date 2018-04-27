@@ -26,6 +26,23 @@ rand_inputs2 = np.random.rand(2, batch_size, 6,9,9).astype(np.float32)
 output1 = convnet.predict(rand_inputs2, rand_masks)
 output2 = convnet.predict(copy.deepcopy(rand_inputs2),rand_masks)
 
+print ("==========PRINT RANDIINPUTS============")
+print (rand_inputs[0, 0, 0, 0])
+print ("=============PRINT RANDLABELS============")
+print (rand_labels[0, 0])
+print ("============PRINT RANDMASK===============")
+print (rand_masks[0, 0])
+print("===========PRINT OUTPUT1===========")
+print(output1)
+print (len(output1))
+print(output1[0].shape)
+print (output1[0][0, 0])
+print("============PRINT OUTPUT2=============")
+print(output1)
+print (len(output1))
+print(output1[0].shape)
+print (output1[0][0, 0])
+
 ###########################################
 
 
@@ -39,7 +56,10 @@ convnet2 = HexitConvNet.CNN((6,9,9), 25, 64, batch_size, "test_dir1")
 output3 = convnet2.predict(copy.deepcopy(rand_inputs2), copy.deepcopy(rand_masks))
 print("Testing to see if weights are reinitialized in a new CNN with same name: SHOULD BE TRUE")
 print(np.array_equal(output3, output2))
-
+print ("===============PRINT OUTPUT3=================")
+print (len(output3))
+print (output3[0].shape)
+print (output3[0][0,0,0])
 #####################################################################
 
 
@@ -50,7 +70,10 @@ rand_labels3 = np.random.rand(2, batch_size, 25).astype(np.float32)
 convnet.train(rand_inputs3, rand_labels3, rand_masks)
 
 output4 = convnet.predict(copy.deepcopy(rand_inputs2),rand_masks)
-
+print ("===========OUTPUT4=============")
+print (len(output4))
+print (output4[0].shape)
+print (output4[0][0,0,0])
 
 convnet3 = HexitConvNet.CNN((6,9,9), 25, 64, batch_size, "test_dir2")
 convnet3.train(rand_inputs3, rand_labels3, rand_masks)

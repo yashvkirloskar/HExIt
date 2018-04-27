@@ -9,7 +9,7 @@ class CNN:
         self.num_channels = input_shape[0]
         self.input_width = input_shape[1]
         self.input_height = input_shape[2]
-		
+
         self.batch_size = batch_size
         self.output_size = output_size
         self.conv_layer_depth = conv_layer_depth
@@ -23,7 +23,7 @@ class CNN:
 
 
 
-	
+
     '''
     Building a convolutional net as described in the paper "Thinking Fast and Slow
     with Deep Learning and Tree Search"
@@ -48,15 +48,19 @@ class CNN:
 
     '''
     def buildGraph(self):
-
+        # Train Inputs: [512 or 2, 6, game_size+4, game_size+4]
+        # Labels: [512, ]
         # with tf.variable_scope("convnet_computationalgraph"):
             #Setup placeholder for input
-        train_inputs = tf.placeholder(tf.float32, [2, self.batch_size, self.num_channels, self.input_width, self.input_height], name="inputs")
-        train_labels = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size], name="labels")
-        mask = tf.placeholder(tf.float32, [2, self.batch_size, self.output_size], name="mask")
+        train_inputs = tf.placeholder(tf.float32, [None, self.num_channels, self.input_width, self.input_height], name="inputs")
+        train_labels = tf.placeholder(tf.float32, [None, self.output_size], name="labels")
+        mask = tf.placeholder(tf.float32, [None, self.output_size], name="mask")
 
-        output = tf.reshape(train_inputs, [2*self.batch_size, self.num_channels, self.input_width, self.input_height])
+        # batch_size = train_inputs.shape[1]
+
+        # output = tf.reshape(train_inputs, [None, self.num_channels, self.input_width, self.input_height])
         # Put tensor in correct shape (NHWC)
+        output = train_inputs
         output = tf.transpose(output, [0, 2, 3, 1])
 
         #Set up convolutional layers
@@ -64,24 +68,24 @@ class CNN:
             output = self.buildConvolutionalOperation(output,self.conv_layer_depth, i)
 
         # Put inputs in terms of player 1 and player 2
-        output = tf.reshape(output, [2, self.batch_size, self.input_width-4, self.input_height-4, self.conv_layer_depth])
-		
-        outputWhite = tf.gather(output, 0, axis=0)
-        maskWhite = tf.gather(mask, 0, axis=0)
-        labelsWhite = tf.gather(train_labels, 0, axis=0)
+        # output = tf.reshape(output, [num_players, self.batch_size, self.input_width-4, self.input_height-4, self.conv_layer_depth])
+        outputWhite, outputBlack = tf.split(output, 2, axis=0)
+        # outputWhite = tf.gather(output, 0, axis=0)
+        maskWhite, maskBlack = tf.split(mask, 2, axis=0)
+        labelsWhite, labelsBlack = tf.split(train_labels, 2, axis=0)
 
-        outputBlack = tf.gather(output, 1, axis=0) 
-        maskBlack = tf.gather(mask, 0, axis=0)
-        labelsBlack = tf.gather(train_labels, 0, axis=0)
+        # outputBlack = tf.gather(output, 1, axis=0) 
+        # maskBlack = tf.gather(mask, 0, axis=0)
+        # labelsBlack = tf.gather(train_labels, 0, axis=0)
 
         # Using a single FC layer loss
-        outputP1 = self.buildFullyConnectedLayerWithSoftmax(outputWhite, self.output_size, maskWhite)
-        outputP2 = self.buildFullyConnectedLayerWithSoftmax(outputBlack, self.output_size, maskBlack)
+        outputP1 = tf.log(self.buildFullyConnectedLayerWithSoftmax(outputWhite, self.output_size, maskWhite))
+        outputP2 = tf.log(self.buildFullyConnectedLayerWithSoftmax(outputBlack, self.output_size, maskBlack))
 
         # #Loss
-        lossP1 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsWhite, outputP1), axis=1))
-        lossP2 = tf.scalar_mul(-1, tf.reduce_sum(tf.multiply(labelsBlack, outputP2), axis=1))
-		
+        lossP1 = tf.scalar_mul(-1, tf.reduce_mean(tf.reduce_sum(tf.multiply(labelsWhite, outputP1), axis=1)))
+        lossP2 = tf.scalar_mul(-1, tf.reduce_mean(tf.reduce_sum(tf.multiply(labelsBlack, outputP2), axis=1)))
+
         output = tf.stack((outputP1, outputP2), axis=0)
         output = tf.identity(output, name="output")
         loss = tf.stack((lossP1, lossP2), axis=0)
@@ -114,9 +118,13 @@ class CNN:
     idx = the index of the layer 
     '''
     def buildFullyConnectedLayerWithSoftmax(self, fc_input, output_size, fc_mask):
-        input_shape = tf.shape(fc_input)
-        rest = input_shape[1] * input_shape[2] * input_shape[3]
-        fc_input = tf.reshape(fc_input, [self.batch_size, rest])
+        # input_shape = tf.shape(fc_input)
+        # 5x5x64
+        # print ("*********")
+        # print (self.input_width)
+        rest = (self.input_width-4) * (self.input_height-4) * self.conv_layer_depth
+        fc_input = tf.reshape(fc_input, [-1, rest])
+
         output = tf.layers.dense(fc_input, output_size)
         masked = tf.multiply(output, fc_mask)
         output = tf.nn.softmax(masked, axis=1)
@@ -175,15 +183,11 @@ class CNN:
 
                 init_op.run()
                 feed_dict = {inputs_placeholder: inputs, labels_placeholder: labels, mask_placeholder: mask}
-                _,result_ops, result_loss = session.run([optimize_op,  ops, loss] , feed_dict=feed_dict)
+                session.run(optimize_op, feed_dict=feed_dict)
+                # print ("**********")
+                # print ("Loss = ", L)
                 save_path = saver.save(session, self.name +  "/" + "convnet")
-                print ("===========Result Ops=============")
-                print (len(result_ops))
-                print (result_ops[0].shape)
-                print (result_ops[0][0])
-                print ("===========Result Loss=============")
-                print (len(result_loss))
-                print (result_loss[0][0])
+
 
             
 
