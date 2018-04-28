@@ -31,15 +31,14 @@ class MCTS:
 	# The i-th element of A gives the distribution of actions from the i-th start state for Player 2.
 	# If it is Player X's turn, then Player Y's distribution will be all 0's except for the last position is a 1.
 	# This data is to be passed to the apprentice, that will be trained to mimic this distribution.
-	def generateDataBatch(self, starting_states):
-
+	def generateDataBatch(self, starting_states, starting_inputs):
 		action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 
 		# run all the starting states through the apprentice as once
 		root_action_distributions = [None for i in range(self.num_actions)]
 		if self.apprentice is not None:
-			root_action_distributions = self.apprentice.getActionDistribution(starting_states)
+			root_action_distributions[i] = self.apprentice.getActionDistribution(starting_inputs)
 			# this is a [batch_size, num_actions] shaped matrix
 
 		for i, state in enumerate(starting_states):
@@ -48,8 +47,8 @@ class MCTS:
 				action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
 				action_distribution2[i][-1] = 1
 			else:
-				action_distribution2[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
-				action_distribution1[i][-1] = 1
+				action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
+				action_distribution1[i-self.batch_size][-1] = 1
 
 		return (starting_states, action_distribution1, action_distribution2)
 
@@ -62,7 +61,7 @@ class MCTS:
 	def runSimulations(self, start_state, root_action_distribution):
 
 		# Initialize new tree
-		self.tree = MCTS_Tree(start_state, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice)
+		self.tree = MCTS_Tree(start_state, self.size, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice)
 		for t in range(self.simulations_per_state):
 			self.tree.runSingleSimulation()
 
@@ -72,28 +71,29 @@ class MCTS:
 	# and a np array of shape [2, batch_size, 25] for white and black
 	# Takes in one output for distributions and one for inputs
 	def generateExpertBatch(self, outFile1=None, outFile2=None):
-		p1States = []
-		p2States = []
+		startingStates = []
 		# Generate BATCH_SIZE number of random states for each player
 		start = time.time()
+		starting_inputs = []
 		for i in range(self.batch_size):
-			p1States.append(generateRandomState(self.size, 1))
+			startingStates.append(generateRandomState(self.size, 1))
+			starting_inputs.append(startingStates[i].channels_from_state())
 		for i in range(self.batch_size):
-			p2States.append(generateRandomState(self.size, -1))
+			startingStates.append(generateRandomState(self.size, -1))
+			starting_inputs.append(startingStates[i+self.batch_size].channels_from_state())
 		end = time.time()
+		starting_inputs = np.array(starting_inputs)
 		print ("Time to generate 512 random states: ", (end-start))
 
 		start = time.time()
-		# We don't care about P2's action distribution, and the last column of -1's is unnecessary  
-		p1DataBatch = self.generateDataBatch(p1States)[0:2]
-		p1Dist = p1DataBatch[1][:, :-1]
-
-
-		p2DataBatch = self.generateDataBatch(p2States)[0:3:2]
-		p2Dist = p2DataBatch[1][:, :-1]
-
+		# We don't care about P2's action distribution, and the last column of -1's is unnecessary
+		dataBatch = self.generateDataBatch(startingStates, starting_inputs)  
+		p1Dist = dataBatch[1][:,:-1]
+		p2Dist = dataBatch[2][:, :-1]
 
 		input_data = np.zeros((2, self.batch_size, 6, self.size+4, self.size+4))
+		input_data[0] = starting_inputs[0:self.batch_size]
+		input_data[1] = starting_inputs[self.batch_size:]
 
 		distributions = np.zeros((2, self.batch_size, self.num_actions))
 		distributions[0] = p1Dist
@@ -103,11 +103,6 @@ class MCTS:
 
 
 		start = time.time()
-		for i in range(self.batch_size):
-			input_data[0, i] = p1DataBatch[0][i].channels_from_state()
-
-		for i in range(self.batch_size):
-			input_data[1, i] = p2DataBatch[0][i].channels_from_state()
 		if outFile1 is not None and outFile2 is not None:
 			np.save(outFile1, input_data)
 			np.save(outFile2, distributions)

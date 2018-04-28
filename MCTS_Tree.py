@@ -13,10 +13,11 @@ def action_string(action):
 
 
 class MCTS_Tree:
-	def __init__(self, start_state, num_actions, root_action_distribution, max_depth=6, apprentice=None):
+	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None):
 		self.start_state = start_state
+		self.size = size
 		self.action_counts = np.zeros(num_actions)
-		self.root = MCTS_Node(start_state, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
+		self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
 
 		self.apprentice = apprentice
 		self.root_action_distribution = root_action_distribution
@@ -36,8 +37,9 @@ class MCTS_Tree:
 
 
 class MCTS_Node:
-	def __init__(self, state, num_actions, parent=None, max_depth=6, apprentice=None, isRoot=False, root_action_distribution=None):
+	def __init__(self, state, size, num_actions, parent=None, max_depth=6, apprentice=None, isRoot=False, root_action_distribution=None):
 		self.state = state
+		self.size = size
 		self.num_actions = num_actions
 		self.parent = parent
 		self.max_depth = max_depth
@@ -146,9 +148,11 @@ class MCTS_Node:
 			if self.isRoot:
 				numer = self.root_action_distribution
 			else:
-				numer = self.apprentice.getActionDistribution(self.state) # vector
+				stateInput = np.ones((2, 6, self.size, self.size))
+				stateInput[(self.state.turn-1)*-1] = self.state.channels_from_state()
+				numer = self.apprentice.getActionDistribution(stateInput) # vector
 			denom = self.outgoing_edge_traversals + 1 # vector
-			apprentice_term = self.w_a * (numer/denom)
+			apprentice_term = self.w_a * (numer[(self.state.turn-1)*-1]/denom)
 
 		uct_new = uct + apprentice_term
 
