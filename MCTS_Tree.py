@@ -148,9 +148,7 @@ class MCTS_Node:
 			if self.isRoot:
 				numer = self.root_action_distribution
 			else:
-				stateInput = np.ones((2, 6, self.size, self.size))
-				stateInput[(self.state.turn-1)*-1] = self.state.channels_from_state()
-				numer = self.apprentice.getActionDistribution(stateInput) # vector
+				numer = self.apprentice.getActionDistributionSingle(self.state.channels_from_state(), self.state.turn()) # vector
 			denom = self.outgoing_edge_traversals + 1 # vector
 			apprentice_term = self.w_a * (numer[(self.state.turn-1)*-1]/denom)
 

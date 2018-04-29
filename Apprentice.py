@@ -28,3 +28,11 @@ class Apprentice:
         print("Entered Apprentice Predict Function")
         return self.getActionDistribution(states, mask)
         print("Exited Apprentice Predict Function")
+
+    # Takes in a state_to_channel of size [1, 6, 9, 9] and outputs a [25,] action distribution 
+    def getActionDistributionSingle(self, state, turn, mask=None):
+        stateInput = np.zeros((2, 6, self.board_size+4, self.board_size+4))
+        stateInput[0 if turn == 1 else 1] = state
+        mask = np.zeros((2, self.board_size*self.board_size))
+        mask[0 if turn == 1 else 1] = (((state[0, 2:-2, 2:-2] + state[1, 2:-2, 2:-2])-1)*-1).flatten()
+        return self.NN.predict(stateInput, mask)[0 if turn == 1 else 1]
