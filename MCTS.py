@@ -4,6 +4,7 @@ from MCTS_Tree import MCTS_Tree, MCTS_Node
 from State import State
 from MCTS_utils import *
 import time
+from multiprocessing import Pool
 
 class MCTS:
 	#uct_new(s,a) = uct(s,a) + w_a * (apprentice_policy(s,a) / n(s,a) + 1)
@@ -12,13 +13,14 @@ class MCTS:
 	#uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
 	
 	#rollout begind at state s' we've never seen before. finish sim, add s' to tree. propagate signal up 
-	def __init__(self, size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
+	def __init__(self, size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None, parallel=False):
 		self.size = size
 		self.num_actions = size**2
 		self.batch_size = batch_size
 		self.simulations_per_state = simulations_per_state
 		self.max_depth = max_depth
 		self.apprentice = apprentice
+		self.parallel = parallel
 
 
 	# Runs SIMULATIONS_PER_STATE simulations on the given state, 
@@ -68,6 +70,35 @@ class MCTS:
 
 		return (starting_states, action_distribution1, action_distribution2)
 
+	def parallelGenerateDataBatch(self, starting_states, starting_inputs):
+		action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
+		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
+
+		# run all the starting states through the apprentice as once
+		#root_action_distributions = [None for i in range(self.num_actions)]
+		root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
+		if self.apprentice is not None:
+			root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
+			print("root_action_distributions shape:", root_action_distributions.shape)
+			# this is a [batch_size, num_actions] shaped matrix
+		map_input = np.array([(starting_states[i], root_action_distributions[0 if i < self.batch_size else 1][i % self.batch_size]) for i in range(2*self.batch_size)])
+		print (map_input.shape)
+		p = Pool(processes=4)
+		distributions = np.array(p.starmap(func=self.parallelRunSimulations, iterable=map_input))
+		print (distributions.shape)
+		action_distribution1 = distributions[0:self.batch_size]
+		action_distribution2 = distributions[self.batch_size:]
+		return (startingStates, action_distribution1, action_distribution2)
+
+
+	def parallelRunSimulations(self, state, root_action_distribution):
+		if state.isPlayerOneTurn():
+			action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+			action_distribution2[i][-1] = 1
+		else:
+			action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+			action_distribution1[i-self.batch_size][-1] = 1
+		return np.array([action_distribution1, action_distribution2])
 
 	# Runs SIMULATIONS_PER_STATE simulations, each starting from the given START_STATE.
 	# Returns a list with as many elements as there are actions, plus 1. (ex. 26 for a 5x5 hex game).
@@ -86,8 +117,8 @@ class MCTS:
 
 		return self.tree.getActionCounts() / self.simulations_per_state
 
-	# Returns a np array of shape [2, batch_size, 6, 5, 5] of input data for white and black
-	# and a np array of shape [2, batch_size, num_actions] for white and black
+	# Returns a np array of shape [2* batch_size, 6, 5, 5] of input data for white and black
+	# and a np array of shape [2* batch_size, num_actions] for white and black
 	# Takes in one output for distributions and one for inputs
 	def generateExpertBatch(self, outFile1=None, outFile2=None):
 		startingStates = []
@@ -106,7 +137,10 @@ class MCTS:
 
 		start = time.time()
 		# We don't care about P2's action distribution, and the last column of -1's is unnecessary
-		dataBatch = self.generateDataBatch(startingStates, starting_inputs)  
+		if self.parallel:
+			dataBatch = self.parallelGenerateDataBatch(startingStates, starting_inputs)
+		else:
+			dataBatch = self.generateDataBatch(startingStates, starting_inputs)  
 		p1Dist = dataBatch[1][:,:-1]
 		p2Dist = dataBatch[2][:, :-1]
 
