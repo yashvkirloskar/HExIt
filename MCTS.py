@@ -68,7 +68,7 @@ class MCTS:
 		return self.tree.getActionCounts() / self.simulations_per_state
 
 	# Returns a np array of shape [2, batch_size, 6, 5, 5] of input data for white and black
-	# and a np array of shape [2, batch_size, 25] for white and black
+	# and a np array of shape [2, batch_size, num_actions] for white and black
 	# Takes in one output for distributions and one for inputs
 	def generateExpertBatch(self, outFile1=None, outFile2=None):
 		startingStates = []

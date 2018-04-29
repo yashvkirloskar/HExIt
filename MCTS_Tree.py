@@ -158,7 +158,7 @@ class MCTS_Node:
 
 		# generate mask (0 if illegal, 1 if legal)
 		legal_actions = self.state.legalActions()
-		mask = np.array([(1 if action in legal_actions else 0) for action in range(25)])
+		mask = np.array([(1 if action in legal_actions else 0) for action in range(self.num_actions)])
 		legal_ucts = uct_new * mask
 
 		return np.argmax(legal_ucts)
