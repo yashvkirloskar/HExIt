@@ -11,7 +11,6 @@ class Apprentice:
         self.NN = HexitConvNet.CNN((6, board_size+4, board_size+4), board_size * board_size, 64,batch_size, name)
 
     def train(self, states, actions, mask=None):
-        print (states.shape)
         mask = np.zeros((states.shape[0], self.board_size*self.board_size))
         for i, state in enumerate(states):
             mask[i] = (((state[0, 2:-2, 2:-2] + state[1, 2:-2, 2:-2])-1)*-1).flatten()

@@ -55,3 +55,5 @@ def board_from_channels(channels):
     blacks = channels[1] + np.ones_like(channels[1])*(channels[1] == 1)
     board = whites+blacks
     return board[2:-2, 2:-2]
+
+    
