@@ -50,18 +50,20 @@ class MCTS:
 		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
 
 		# run all the starting states through the apprentice as once
-		root_action_distributions = [None for i in range(self.num_actions)]
+		#root_action_distributions = [None for i in range(self.num_actions)]
+		root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
 		if self.apprentice is not None:
 			root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
+			print("root_action_distributions shape:", root_action_distributions.shape)
 			# this is a [batch_size, num_actions] shaped matrix
 
 		for i, state in enumerate(starting_states):
 			print("i:", i)
 			if state.isPlayerOneTurn():
-				action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
+				action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[0][i])
 				action_distribution2[i][-1] = 1
 			else:
-				action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[i])
+				action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[1][i - self.batch_size])
 				action_distribution1[i-self.batch_size][-1] = 1
 
 		return (starting_states, action_distribution1, action_distribution2)
@@ -73,10 +75,13 @@ class MCTS:
 	# The i-th element is the number of times we took the i-th action from the root state (as a probability).
 	# The last element is the number of times we took no action (if it wasn't this player's turn.)
 	def runSimulations(self, start_state, root_action_distribution):
-
+		if self.apprentice is not None:
+			print("in runSimulations, root_action_distribution shape:", root_action_distribution.shape)
 		# Initialize new tree
 		self.tree = MCTS_Tree(start_state, self.size, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice)
 		for t in range(self.simulations_per_state):
+			if self.apprentice is not None:
+				print("running simulation #t = ", t)
 			self.tree.runSingleSimulation()
 
 		return self.tree.getActionCounts() / self.simulations_per_state

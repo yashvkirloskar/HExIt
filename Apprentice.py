@@ -22,7 +22,11 @@ class Apprentice:
         mask = np.zeros((states.shape[0], self.board_size*self.board_size))
         for i, state in enumerate(states):
             mask[i] = (((state[0, 2:-2, 2:-2] + state[1, 2:-2, 2:-2])-1)*-1).flatten()
-        return self.NN.predict(states, mask)
+        prediction = self.NN.predict(states, mask)
+        # over cautious protection for weird errors
+        if prediction is None or type(prediction) != list or len(prediction) == 0: 
+            return prediction
+        return prediction[0]
 
     def predict(self, states):
         print("Entered Apprentice Predict Function")
@@ -36,3 +40,4 @@ class Apprentice:
         mask = np.zeros((2, self.board_size*self.board_size))
         mask[0 if turn == 1 else 1] = (((state[0, 2:-2, 2:-2] + state[1, 2:-2, 2:-2])-1)*-1).flatten()
         return self.NN.predict(stateInput, mask)[0][0 if turn == 1 else 1]
+        

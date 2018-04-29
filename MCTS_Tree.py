@@ -146,7 +146,7 @@ class MCTS_Node:
 			uct = self.computeUct()
 
 		apprentice_term = np.zeros(self.num_actions)
-		index = 0 #dummy
+
 		if self.apprentice is not None:
 			denom = self.outgoing_edge_traversals + 1 # vector
 			if self.isRoot:
@@ -165,17 +165,14 @@ class MCTS_Node:
 		chosen_action = np.argmax(legal_ucts)
 
 		if self.apprentice is not None and chosen_action > self.num_actions:
-			print("isRoot:", self.root_action_distribution)
+			print("isRoot:", self.isRoot)
 			print("numer shape:", numer.shape)
 			print("denom shape:", denom.shape)
-			print("index:", index)
-			print("numer[index] shape:", numer[index].shape)
 			print("apprentice_term shape:", apprentice_term.shape)
 			print("uct shape:", uct.shape)
 			print("uct new shape:", uct_new.shape)
 			print("legal_ucts shape:", legal_ucts.shape)
-			print("m")
-			print("argmax shape:", np.argmax(legal_ucts))
+			print("argmax:", np.argmax(legal_ucts))
 		return np.argmax(legal_ucts)
 
 
