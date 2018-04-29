@@ -12,10 +12,10 @@ class MCTS:
 	#uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
 	
 	#rollout begind at state s' we've never seen before. finish sim, add s' to tree. propagate signal up 
-	def __init__(self, num_actions=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
+	def __init__(self, size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
 		print ("initialized MCTS")
-		self.size = num_actions
-		self.num_actions = num_actions**2
+		self.size = size
+		self.num_actions = size**2
 		self.batch_size = batch_size
 		self.simulations_per_state = simulations_per_state
 		self.max_depth = max_depth

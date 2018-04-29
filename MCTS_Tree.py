@@ -92,7 +92,7 @@ class MCTS_Node:
 		# If we've never been to this next state node, create it and begin rollout.
 		if next_state_node is None:
 			next_state = self.state.nextState(chosen_action) # find what state results
-			new_node = MCTS_Node(next_state, self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice) # create a node for it
+			new_node = MCTS_Node(state=next_state, size=self.size, num_actions=self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice) # create a node for it
 			self.children[chosen_action] = new_node # set this node as one of my children
 			_, reward = new_node.rollout() # Rollout will take care of stats updates for the new child node.
 			self.updateStatistics(chosen_action, reward) # Update my own stats
@@ -128,7 +128,7 @@ class MCTS_Node:
 		next_state_node = self.children[random_action]
 		if next_state_node is None:
 			next_state = self.state.nextState(random_action)
-			next_state_node = MCTS_Node(next_state, self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice)
+			next_state_node = MCTS_Node(state=next_state, size=self.size, num_actions=self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice)
 			self.children[random_action] = next_state_node
 
 		# Recursively call rollout on that next state node.
