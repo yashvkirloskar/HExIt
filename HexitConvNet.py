@@ -139,13 +139,6 @@ class CNN:
                 _,loss_val, output = session.run([optimize_op, loss_op, output_op], feed_dict=feed_dict)
                 total_loss = loss_val
                 save_path = saver.save(session, self.name +  "/" + "convnet")
-                print ("===========Result Ops=============")
-                print (len(output))
-                print (output[0].shape)
-                print (output[0][0])
-                print ("===========Result Loss=============")
-                print (len(loss_val))
-                print (loss_val[0])
 
         else:
             print("no saved graph, building a new one")
@@ -171,13 +164,6 @@ class CNN:
                 feed_dict = {inputs_placeholder: inputs, labels_placeholder: labels, mask_placeholder: mask}
                 _,result_ops, result_loss = session.run([optimize_op,  ops, loss] , feed_dict=feed_dict)
                 save_path = saver.save(session, self.name +  "/" + "convnet")
-                print ("===========Result Ops=============")
-                print (len(result_ops))
-                print (result_ops[0].shape)
-                print (result_ops[0][0])
-                print ("===========Result Loss=============")
-                print (len(result_loss))
-                print (result_loss[0])
 
             
 

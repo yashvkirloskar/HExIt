@@ -13,7 +13,6 @@ class MCTS:
 	
 	#rollout begind at state s' we've never seen before. finish sim, add s' to tree. propagate signal up 
 	def __init__(self, size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
-		print ("initialized MCTS")
 		self.size = size
 		self.num_actions = size**2
 		self.batch_size = batch_size
@@ -83,7 +82,7 @@ class MCTS:
 			starting_inputs.append(startingStates[i+self.batch_size].channels_from_state())
 		end = time.time()
 		starting_inputs = np.array(starting_inputs)
-		print ("Time to generate 512 random states: ", (end-start))
+		#print ("Time taken to generate", 2 * self.batch_size, "random states: ", (end-start))
 
 		start = time.time()
 		# We don't care about P2's action distribution, and the last column of -1's is unnecessary
@@ -99,7 +98,7 @@ class MCTS:
 		distributions[0:self.batch_size] = p1Dist
 		distributions[self.batch_size:] = p2Dist
 		end = time.time()
-		print ("Time to do MCTS: ", (end-start))
+		#print ("Time taken to do MCTS on", 2 * self.batch_size, "states: ", (end-start))
 
 
 		start = time.time()
@@ -107,7 +106,7 @@ class MCTS:
 			np.save(outFile1, input_data)
 			np.save(outFile2, distributions)
 		end = time.time()
-		print ("Time to create inputs for apprentice: ", (end-start))
+		#print ("Time to create inputs for apprentice: ", (end-start))
 		return (starting_inputs, distributions)
 
 
