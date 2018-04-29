@@ -42,7 +42,7 @@ def testBasicIntegration(batch_size=4, game_size=5, simulations_per_state=500):
 
 
 
-def testMultipleIterations(iterations=3, batch_size=4, game_size=5 simulations_per_state=500):
+def testMultipleIterations(iterations=3, batch_size=4, game_size=5, simulations_per_state=500):
     
     print("Testing", 3, "iterations of Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
     
