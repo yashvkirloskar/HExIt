@@ -87,6 +87,8 @@ class MCTS_Node:
 		# choose best action, according to UCT. chooseBestAction should account for Black or White.
 		chosen_action = self.chooseBestAction() # Guaranteed to be a legal action
 		# Grab the resulting next state
+		if chosen_action >= self.num_actions:
+			print("ALERT, chosen_action = ", chosen_action)
 		next_state_node = self.children[chosen_action]
 
 		# If we've never been to this next state node, create it and begin rollout.
@@ -144,13 +146,14 @@ class MCTS_Node:
 			uct = self.computeUct()
 
 		apprentice_term = np.zeros(self.num_actions)
+		index = 0 #dummy
 		if self.apprentice is not None:
+			denom = self.outgoing_edge_traversals + 1 # vector
 			if self.isRoot:
 				numer = self.root_action_distribution
 			else:
 				numer = self.apprentice.getActionDistributionSingle(self.state.channels_from_state(), self.state.turn()) # vector
-			denom = self.outgoing_edge_traversals + 1 # vector
-			apprentice_term = self.w_a * (numer[(self.state.turn-1)*-1]/denom)
+			apprentice_term = self.w_a * (numer/denom)
 
 		uct_new = uct + apprentice_term
 
@@ -159,6 +162,20 @@ class MCTS_Node:
 		mask = np.array([(1 if action in legal_actions else 0) for action in range(self.num_actions)])
 		legal_ucts = uct_new * mask
 
+		chosen_action = np.argmax(legal_ucts)
+
+		if self.apprentice is not None and chosen_action > self.num_actions:
+			print("isRoot:", self.root_action_distribution)
+			print("numer shape:", numer.shape)
+			print("denom shape:", denom.shape)
+			print("index:", index)
+			print("numer[index] shape:", numer[index].shape)
+			print("apprentice_term shape:", apprentice_term.shape)
+			print("uct shape:", uct.shape)
+			print("uct new shape:", uct_new.shape)
+			print("legal_ucts shape:", legal_ucts.shape)
+			print("m")
+			print("argmax shape:", np.argmax(legal_ucts))
 		return np.argmax(legal_ucts)
 
 

@@ -20,6 +20,21 @@ class MCTS:
 		self.max_depth = max_depth
 		self.apprentice = apprentice
 
+
+	# Runs SIMULATIONS_PER_STATE simulations on the given state, 
+	# collects the action distribution, and returns the argmax action.
+	def getMove(self, state):
+
+		# run all the starting states through the apprentice once, for efficiency
+		root_action_distribution = [None for i in range(self.num_actions)]
+		if self.apprentice is not None:
+			root_action_distribution = self.apprentice.getActionDistributionSingle(state)
+			# this is a [num_actions,] shaped vector
+
+		action_distribution = self.runSimulations(state, root_action_distribution)
+		return np.argmax(action_distribution)
+
+
 	# This method generates a dataset of size SELF.BATCH_SIZE.
 	# It is passed STARTING_STATES, which is a list of BATCH_SIZE states (as State instances).
 	# For each starting state, runs SELF.SIMULATIONS_PER_STATE, each starting at that start state.

@@ -5,11 +5,18 @@ from MCTS_utils import board_from_channels
 import shutil
 import time
 
+def printActionDistribution(ad):
+    for a in ad:
+        if str(a)[0] == '-':
+            print("%.2f" %(a * -1), " ", end='')
+        else:
+            print("%.2f" %a, " ", end='')
+    print()
 
 
 # Create data batch, feed it to apprentice, train, then predict, make sure shapes are correct
 
-def testBasicIntegration(batch_size=2, game_size=5, simulations_per_state=500):
+def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500):
     start = time.time()
     print("Testing basic Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
 
@@ -30,29 +37,30 @@ def testBasicIntegration(batch_size=2, game_size=5, simulations_per_state=500):
 
     # compare the apprentice-predicted output with the expert-generated output
     # we dont expect them to match too well after such little training, but just examine a few
+
     print("White to move:")
-    print(board_from_channels(test_states[0][0]))
+    print(board_from_channels(test_states[0]))
     print("Expert-Generated White Distribution for this state:")
-    print(test_labels[0][0])
+    printActionDistribution(test_labels[0])
     print("Apprentice-Predicted White Distribution for this state:")
-    print(predicted_labels[0][0])
+    printActionDistribution(predicted_labels[0][0])
     print("hopefully the distributions match")
 
     print("Black to move:")
-    print(board_from_channels(test_states[1][0]))
+    print(board_from_channels(test_states[batch_size]))
     print("Expert-Generated Black Distribution for this state:")
-    print(test_labels[1][0])
+    printActionDistribution(test_labels[batch_size])
     print("Apprentice-Predicted White Distribution for this state:")
-    print(predicted_labels[1][0])
+    printActionDistribution(predicted_labels[1][0])
     print("hopefully the distributions match")
 
     shutil.rmtree("test_basic_integration")
     end = time.time()
-    print("Basic Integration test passed! Took time: ", end - start)
+    print("Basic Integration test passed! Took", end - start, "seconds\n\n")
 
 
-def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulations_per_state=500):
-    
+def testMultipleIterations(num_iterations=3, batch_size=3, game_size=5, simulations_per_state=500):
+    start = time.time()
     print("Testing", num_iterations, "iterations of Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
 
     num_actions = game_size ** 2
@@ -62,7 +70,7 @@ def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulati
     mcts_assisted = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=500, max_depth=4, apprentice=apprentice)
 
     # first round of expert
-    train_inputs, train_labels = mcts.generateExpertBatch()
+    train_inputs, train_labels = mcts_initial.generateExpertBatch()
     # first round of apprentice
     apprentice.train(train_inputs, train_labels)
 
@@ -78,28 +86,32 @@ def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulati
     # compare the apprentice-predicted output with the expert-generated output
     # we dont expect them to match too well after such little training, but just examine a few
     print("White to move:")
-    print(board_from_channels(test_states[0][0]))
+    print(board_from_channels(test_states[0]))
     print("Expert-Generated White Distribution for this state:")
-    print(test_labels[0][0])
+    printActionDistribution(test_labels[0])
     print("Apprentice-Predicted White Distribution for this state:")
-    print(predicted_labels[0][0])
+    printActionDistribution(predicted_labels[0][0])
     print("hopefully the distributions match")
 
     print("Black to move:")
-    print(board_from_channels(test_states[1][0]))
+    print(board_from_channels(test_states[batch_size]))
     print("Expert-Generated Black Distribution for this state:")
-    print(test_labels[1][0])
+    printActionDistribution(test_labels[batch_size])
     print("Apprentice-Predicted White Distribution for this state:")
-    print(predicted_labels[1][0])
+    printActionDistribution(predicted_labels[1][0])
     print("hopefully the distributions match")
 
+
     shutil.rmtree("test_multiple_integration")
+    end = time.time()
+    print("Multiple Integration test passed! Took", end - start, "seconds\n\n")
 
 
 
 def main():
     print ("Testing Integration...")
-    testBasicIntegration()
+    #testBasicIntegration()
+    testMultipleIterations()
     print ("All tests passed!")
     
     
