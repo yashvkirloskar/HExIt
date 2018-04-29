@@ -38,7 +38,7 @@ class MCTS:
 		# run all the starting states through the apprentice as once
 		root_action_distributions = [None for i in range(self.num_actions)]
 		if self.apprentice is not None:
-			root_action_distributions[i] = self.apprentice.getActionDistribution(starting_inputs)
+			root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
 			# this is a [batch_size, num_actions] shaped matrix
 
 		for i, state in enumerate(starting_states):
@@ -92,12 +92,12 @@ class MCTS:
 		p2Dist = dataBatch[2][:, :-1]
 
 		input_data = np.zeros((2, self.batch_size, 6, self.size+4, self.size+4))
-		input_data[0] = starting_inputs[0:self.batch_size]
-		input_data[1] = starting_inputs[self.batch_size:]
+		# input_data[0] = starting_inputs[0:self.batch_size]
+		# input_data[1] = starting_inputs[self.batch_size:]
 
-		distributions = np.zeros((2, self.batch_size, self.num_actions))
-		distributions[0] = p1Dist
-		distributions[1] = p2Dist
+		distributions = np.zeros((2* self.batch_size, self.num_actions))
+		distributions[0:self.batch_size] = p1Dist
+		distributions[self.batch_size:] = p2Dist
 		end = time.time()
 		print ("Time to do MCTS: ", (end-start))
 
@@ -108,6 +108,6 @@ class MCTS:
 			np.save(outFile2, distributions)
 		end = time.time()
 		print ("Time to create inputs for apprentice: ", (end-start))
-		return (input_data, distributions)
+		return (starting_inputs, distributions)
 
 
