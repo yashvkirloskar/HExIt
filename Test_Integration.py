@@ -59,15 +59,15 @@ def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500):
     print("Basic Integration test passed! Took", end - start, "seconds\n\n")
 
 
-def testMultipleIterations(num_iterations=3, batch_size=3, game_size=5, simulations_per_state=500):
+def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulations_per_state=50):
     start = time.time()
     print("Testing", num_iterations, "iterations of Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
 
     num_actions = game_size ** 2
 
-    mcts_initial = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=4, apprentice=None)
-    apprentice = Apprentice(name="test_multiple_integration", board_size=5, batch_size=batch_size)
-    mcts_assisted = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=500, max_depth=4, apprentice=apprentice)
+    mcts_initial = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=3, apprentice=None)
+    apprentice = Apprentice(name="test_multiple_integration", board_size=game_size, batch_size=batch_size)
+    mcts_assisted = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=3, apprentice=apprentice)
 
     # first round of expert
     train_inputs, train_labels = mcts_initial.generateExpertBatch()

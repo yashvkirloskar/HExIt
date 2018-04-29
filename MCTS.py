@@ -80,7 +80,7 @@ class MCTS:
 		# Initialize new tree
 		self.tree = MCTS_Tree(start_state, self.size, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice)
 		for t in range(self.simulations_per_state):
-			if self.apprentice is not None:
+			if self.apprentice is not None and t % 10 == 0:
 				print("running simulation #t = ", t)
 			self.tree.runSingleSimulation()
 

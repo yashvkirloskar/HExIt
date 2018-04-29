@@ -164,15 +164,15 @@ class MCTS_Node:
 
 		chosen_action = np.argmax(legal_ucts)
 
-		if self.apprentice is not None and chosen_action > self.num_actions:
-			print("isRoot:", self.isRoot)
-			print("numer shape:", numer.shape)
-			print("denom shape:", denom.shape)
-			print("apprentice_term shape:", apprentice_term.shape)
-			print("uct shape:", uct.shape)
-			print("uct new shape:", uct_new.shape)
-			print("legal_ucts shape:", legal_ucts.shape)
-			print("argmax:", np.argmax(legal_ucts))
+		# if self.apprentice is not None and chosen_action > self.num_actions:
+		# 	print("isRoot:", self.isRoot)
+		# 	print("numer shape:", numer.shape)
+		# 	print("denom shape:", denom.shape)
+		# 	print("apprentice_term shape:", apprentice_term.shape)
+		# 	print("uct shape:", uct.shape)
+		# 	print("uct new shape:", uct_new.shape)
+		# 	print("legal_ucts shape:", legal_ucts.shape)
+		# 	print("argmax:", np.argmax(legal_ucts))
 		return np.argmax(legal_ucts)
 
 
