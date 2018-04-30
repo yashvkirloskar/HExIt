@@ -2,29 +2,23 @@ import util
 import numpy as np
 from State import State
 
-def action_string(action):
-	if action == 9:
-		return "dummy"
-	row, col = action // 3, action % 3
-	row_string = "top" if row == 0 else ("middle" if row == 1 else "bottom")
-	col_string = "left" if col == 0 else ("center" if col == 1 else "right")
-	s = row_string + ", " + col_string
-	return s
-
 
 class MCTS_Tree:
-	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None, parallel=False):
+	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None, parallel=False, threaded=False, batch_num=0, parent=None):
 		self.start_state = start_state
 		self.size = size
 		self.action_counts = np.zeros(num_actions)
 		self.parallel = parallel
+
 		if parallel:
-			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=False, root_action_distribution=root_action_distribution)
+			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=False, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
 		else:
-			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
+			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
 
 		self.apprentice = apprentice
 		self.root_action_distribution = root_action_distribution
+		self.batch_num = batch_num
+		self.parent = parent
 
 	# Runs a single simulation starting from the root
 	# Update the action_counts array
@@ -41,7 +35,9 @@ class MCTS_Tree:
 
 
 class MCTS_Node:
-	def __init__(self, state, size, num_actions, parent=None, max_depth=6, apprentice=None, isRoot=False, root_action_distribution=None):
+	def __init__(self, state, size, num_actions, parent=None, max_depth=6,
+		apprentice=None, isRoot=False, root_action_distribution=None,
+		batch_num=0, tree=None):
 		self.state = state
 		self.size = size
 		self.num_actions = num_actions
@@ -63,6 +59,8 @@ class MCTS_Node:
 
 		self.isRoot = isRoot
 		self.root_action_distribution = root_action_distribution
+		self.batch_num = batch_num
+		self.tree = tree
 
 	def __repr__(self):
 		s = self.state.__repr__()# + "R(S, A): " + str(self.outgoing_edge_rewards) + "\nN(S, A): " + str(self.outgoing_edge_traversals) + "\nN(S): " + str(self.node_visits)
@@ -98,7 +96,11 @@ class MCTS_Node:
 		# If we've never been to this next state node, create it and begin rollout.
 		if next_state_node is None:
 			next_state = self.state.nextState(chosen_action) # find what state results
-			new_node = MCTS_Node(state=next_state, size=self.size, num_actions=self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice) # create a node for it
+			# create a node for it
+			new_node = MCTS_Node(state=next_state, size=self.size, num_actions=self.num_actions,
+			parent=self, max_depth=self.max_depth, apprentice=self.apprentice,
+			batch_num=self.batch_num, tree=self.tree) 
+
 			self.children[chosen_action] = new_node # set this node as one of my children
 			_, reward = new_node.rollout() # Rollout will take care of stats updates for the new child node.
 			self.updateStatistics(chosen_action, reward) # Update my own stats
@@ -134,7 +136,10 @@ class MCTS_Node:
 		next_state_node = self.children[random_action]
 		if next_state_node is None:
 			next_state = self.state.nextState(random_action)
-			next_state_node = MCTS_Node(state=next_state, size=self.size, num_actions=self.num_actions, parent=self, max_depth=self.max_depth, apprentice=self.apprentice)
+			next_state_node = MCTS_Node(state=next_state, size=self.size,
+				num_actions=self.num_actions, parent=self,
+				max_depth=self.max_depth, apprentice=self.apprentice,
+				batch_num=self.batch_num, tree=self.tree)
 			self.children[random_action] = next_state_node
 
 		# Recursively call rollout on that next state node.
@@ -156,7 +161,20 @@ class MCTS_Node:
 			if self.isRoot:
 				numer = self.root_action_distribution
 			else:
-				numer = self.apprentice.getActionDistributionSingle(self.state.channels_from_state(), self.state.turn()) # vector
+				# Place self on apprentice batch queue
+				self.tree.parent.batch_lock.acquire()
+				batch_index = ((0 if self.state.turn() == 1 else 1) * self.tree.parent.batch_size) + self.batch_num
+				self.tree.parent.apprentice_batch[batch_index] = self.state.channels_from_state()
+				self.tree.parent.num_submitted += 1
+				batch_ready = self.tree.parent.num_submitted == self.tree.parent.num_white_threads_left + self.tree.parent.num_black_threads_left
+				if batch_ready:
+					self.tree.parent.num_submitted = 0
+					self.tree.parent.batch_ready.set()
+				self.tree.parent.batch_lock.release()
+				# wait for the batch to complete
+				self.tree.parent.apprentice_finished.wait()
+				numer = self.apprentice_predictions[batch_index]
+				#numer = self.apprentice.getActionDistributionSingle(self.state.channels_from_state(), self.state.turn()) # vector
 			apprentice_term = self.w_a * (numer/denom)
 
 		uct_new = uct + apprentice_term

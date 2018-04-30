@@ -16,14 +16,16 @@ def printActionDistribution(ad):
 
 # Create data batch, feed it to apprentice, train, then predict, make sure shapes are correct
 
-def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500):
+def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500, threaded=False):
     start = time.time()
     print("Testing basic Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
 
     num_actions = game_size**2
 
-    mcts = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=4, apprentice=None)
+    mcts = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state,
+        max_depth=4, apprentice=None, threaded=threaded)
     train_inputs, train_labels = mcts.generateExpertBatch()
+    print("DONE GENERATING EXPERT BATCH")
 
     apprentice = Apprentice(name="test_basic_integration", board_size=5, batch_size=batch_size)
     # not sure what mask does
@@ -31,8 +33,9 @@ def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500):
 
     # once train works, add a line to call apprentice.predict, and examine output shape.
     test_states, test_labels = mcts.generateExpertBatch()
-    predicted_labels = apprentice.predict(test_states)[0] # [0] is because predict returns a singleton list
+    predicted_labels = apprentice.predict(test_states)
 
+    print("predictided shape ", predicted_labels.shape)
     assert(predicted_labels.shape == (2, batch_size, num_actions))
 
     # compare the apprentice-predicted output with the expert-generated output
@@ -59,15 +62,19 @@ def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500):
     print("Basic Integration test passed! Took", end - start, "seconds\n\n")
 
 
-def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulations_per_state=50):
+def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulations_per_state=50, threaded=False):
     start = time.time()
     print("Testing", num_iterations, "iterations of Integration with batch_size = ", batch_size, ", simulations_per_state = ", simulations_per_state)
 
     num_actions = game_size ** 2
 
-    mcts_initial = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=3, apprentice=None)
+    mcts_initial = MCTS(size=game_size, batch_size=batch_size,
+        simulations_per_state=simulations_per_state,
+        max_depth=3, apprentice=None, threaded=threaded)
     apprentice = Apprentice(name="test_multiple_integration", board_size=game_size, batch_size=batch_size)
-    mcts_assisted = MCTS(size=game_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=3, apprentice=apprentice)
+    mcts_assisted = MCTS(size=game_size, batch_size=batch_size,
+        simulations_per_state=simulations_per_state,
+        max_depth=3, apprentice=apprentice, threaded=threaded)
 
     # first round of expert
     train_inputs, train_labels = mcts_initial.generateExpertBatch()
@@ -110,8 +117,8 @@ def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulati
 
 def main():
     print ("Testing Integration...")
-    #testBasicIntegration()
-    testMultipleIterations()
+    #testBasicIntegration(batch_size=1, threaded=True)
+    testMultipleIterations(batch_size=1, threaded=True)
     print ("All tests passed!")
     
     
