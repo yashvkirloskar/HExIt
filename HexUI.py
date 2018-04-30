@@ -18,6 +18,7 @@ from collections import namedtuple
 from math import *
 from time import sleep
 from VectorHex import *
+import numpy as np
 
 # Introduction to the game-------------------------------------------------------------------------------------------------------------
 """This is a two player Hex Game. In this game the player has to build a bridge from his side to his other side of 
@@ -28,7 +29,7 @@ John Nash an independent inventor of this game.
 """
 
 
-GRID_SIZE = 7
+GRID_SIZE = 5
 IMG_SIZE = 35
 XPAD = 40
 YPAD = 40
@@ -41,9 +42,32 @@ class gameGrid():
         self.temp = PhotoImage(file="blue_hex.gif")
         self.black = PhotoImage(file="black_hex.gif")
         self.white = PhotoImage(file="white_hex.gif")
+        self.widgets = [[None for i in range(GRID_SIZE)] for j in range(GRID_SIZE)]
         self.drawGrid()
-        self.playInfo = VectorHex(GRID_SIZE)
+        self.p1 = np.random.choice(['ai'])
+        print ("P1 is ", self.p1)
+        if self.p1 == 'ai':
+            self.p2 = 'random'
+        else:
+            self.p2 = np.random.choice(['ai', 'human'])
+        print ("P2 is " + self.p2)
+        if (self.p1 == 'ai'):
+            print ("Click a tile to make the ai play")
+        self.playInfo = VectorHex(GRID_SIZE, p1=self.p1, p2=self.p2)
         self.frame.configure(background="yellow")
+
+    def aiMove(self):
+        print ("Enter aiMove")
+        turn, move = self.playInfo.ai_move()
+        self.toggleColor(self.widgets[move // GRID_SIZE][move % GRID_SIZE], turn)
+        if self.playInfo.winner is not None:
+            winner = ""
+            if turn == 1:
+                winner = " 1 ( White ) "
+            else:
+                winner += " 2 ( Black ) "
+            self.display_winner(winner)
+            print ("Click on any button to start another game.")
 
     def drawGrid(self):
         for yi in range(0, GRID_SIZE):
@@ -54,6 +78,7 @@ class gameGrid():
                 l.image = self.temp
                 l.place(anchor=NW, x=xi, y=YPAD + yi * IMG_SIZE)
                 l.bind('<Button-1>', lambda e: self.on_click(e))
+                self.widgets[yi][i] = l
                 xi += 1.5 * IMG_SIZE
 
     def getCoordinates(self, widget):
@@ -61,15 +86,23 @@ class gameGrid():
         col = (widget.winfo_x() - XPAD - row * IMG_SIZE) / (1.5 * IMG_SIZE)
         return int(row), int(col)
 
-    def toggleColor(self, widget):
-        if self.playInfo.turn == 1:
-            widget.config(image=self.white)
-            widget.image = self.white
+    def toggleColor(self, widget, turn = None):
+        if turn is None:    
+            if self.playInfo.turn == 1:
+                widget.config(image=self.white)
+                widget.image = self.white
+            else:
+                widget.config(image=self.black)
+                widget.image = self.black
         else:
-            widget.config(image=self.black)
-            widget.image = self.black
+            if turn == 1:
+                widget.config(image=self.white)
+                widget.image = self.white
+            else:
+                widget.config(image=self.black)
+                widget.image = self.black
 
-    def display_winner(self, winner):
+    def display_winner(self, winner, turn=None):
         winner_window = Tk()
         winner_window.wm_title("Winner")
         frame = Frame(winner_window, width=300, height=40)
@@ -81,6 +114,13 @@ class gameGrid():
     def on_click(self, event):
         if self.playInfo.winner is not None:
             self.restart()
+
+        if self.playInfo.turn == 1 and (self.p1 == 'ai' or self.p1 == 'random'):
+            self.aiMove()
+            return
+        if self.playInfo.turn == 2 and (self.p2 == 'ai' or self.p2 == 'random'):
+            self.aiMove()
+            return
         if event.widget.image != self.temp:
             return
         self.toggleColor(event.widget)
@@ -97,7 +137,8 @@ class gameGrid():
 
     def restart(self):
         self.drawGrid()
-        self.playInfo = VectorHex(GRID_SIZE)
+        p1 = np.random.choice(['ai', 'human'])
+        self.playInfo = VectorHex(GRID_SIZE, p1=p1, p2='human' if p1 == 'ai' else 'ai')
 
 class gameWindow:
     def __init__(self, window):

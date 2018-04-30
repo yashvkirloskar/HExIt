@@ -13,11 +13,15 @@ def action_string(action):
 
 
 class MCTS_Tree:
-	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None):
+	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None, parallel=False):
 		self.start_state = start_state
 		self.size = size
 		self.action_counts = np.zeros(num_actions)
-		self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
+		self.parallel = parallel
+		if parallel:
+			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=False, root_action_distribution=root_action_distribution)
+		else:
+			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution)
 
 		self.apprentice = apprentice
 		self.root_action_distribution = root_action_distribution

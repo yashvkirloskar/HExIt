@@ -11,13 +11,14 @@ class Expert:
 		self.max_depth = max_depth
 		self.apprentice = apprentice
 
-		self.mcts = MCTS(size=board_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=max_depth, apprentice=apprentice):
+		self.mcts = MCTS(size=board_size, batch_size=batch_size, simulations_per_state=simulations_per_state, max_depth=max_depth, apprentice=apprentice)
 
 
-	def generateBatch():
+	def generateBatch(self):
 		return self.mcts.generateExpertBatch(outFile1=None, outFile2=None)
 
 
-	def getMove(state):
+	def getMove(self, state):
+		print ("Getting move from expert")
 		return self.mcts.getMove(state)
 		

@@ -9,7 +9,7 @@ class HexAgent:
         self.simulations_per_state = simulations_per_state
         self.max_depth = max_depth
 
-        self.apprentice = Apprentice(board_size, batch_size, simulations_per_state, max_depth)
+        self.apprentice = Apprentice(name, board_size, batch_size)
         self.expert = Expert(name, board_size, batch_size, simulations_per_state, max_depth, apprentice=None)
         self.addApprentice = True
 
@@ -17,8 +17,15 @@ class HexAgent:
         batch, distributions = self.expert.generateBatch()
         self.apprentice.train(batch, distributions)
         if self.addApprentice:
-            self.expert = Expert(name, self.board_size, self.batch_size, self.simulations_per_state, self.max_depth, self.apprentice)
+            self.expert = Expert(self.name, self.board_size, self.batch_size, self.simulations_per_state, self.max_depth, self.apprentice)
             self.addApprentice = False
 
+    # Do not call this method unless you have called train
     def getMove(self, state):
+        print ("Getting move from AI")
+        if self.addApprentice:
+            self.expert = Expert(self.name, self.board_size, self.batch_size, self.simulations_per_state, self.max_depth, self.apprentice)
         return self.expert.getMove(state)
+
+    def getRandomMove(self, state):
+        return state.chooseRandomAction()
