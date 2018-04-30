@@ -1,5 +1,4 @@
 import numpy as np
-import VectorHex
 from GameUtils import *
 from copy import deepcopy, copy
 import random

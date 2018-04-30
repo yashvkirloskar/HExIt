@@ -72,8 +72,7 @@ class MCTS:
 		return (starting_states, action_distribution1, action_distribution2)
 
 	def parallelGenerateDataBatch(self, starting_states, starting_inputs):
-		action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
-		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
+		
 
 		# run all the starting states through the apprentice as once
 		#root_action_distributions = [None for i in range(self.num_actions)]
@@ -87,25 +86,25 @@ class MCTS:
 		logger = multiprocessing.log_to_stderr()
 		logger.setLevel(logging.INFO)
 		p = Pool()
-		distributions = np.array(p.map(func=self.parallelRunSimulations, iterable=starting_states))
+		distributions = p.map(func=self.parallelRunSimulations, iterable=starting_states)
 		p.close()
 		p.join()
-		print (distributions.shape)
-		action_distribution1 = distributions[0:self.batch_size]
-		action_distribution2 = distributions[self.batch_size:]
-		return (startingStates, action_distribution1, action_distribution2)
+		distributions = np.array(distributions)
+		action_distribution1 = distributions[0:self.batch_size, 0, :]
+		action_distribution2 = distributions[self.batch_size:, 1, :]
+		return (starting_states, action_distribution1, action_distribution2)
 
 
 	def parallelRunSimulations(self, state):
+		action_distribution1 = np.zeros(shape=(self.num_actions + 1))
+		action_distribution2 = np.zeros(shape=(self.num_actions + 1))
 		root_action_distribution = None
-		print (state.board)
-		print (multiprocessing.current_process())
 		if state.isPlayerOneTurn():
-			action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distribution)
-			action_distribution2[i][-1] = 1
+			action_distribution1[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+			action_distribution2[-1] = 1
 		else:
-			action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distribution)
-			action_distribution1[i-self.batch_size][-1] = 1
+			action_distribution2[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+			action_distribution1[-1] = 1
 		return np.array([action_distribution1, action_distribution2])
 
 	# Runs SIMULATIONS_PER_STATE simulations, each starting from the given START_STATE.
@@ -119,7 +118,7 @@ class MCTS:
 		# Initialize new tree
 		tree = MCTS_Tree(start_state, self.size, self.num_actions, root_action_distribution=root_action_distribution, max_depth=self.max_depth, apprentice=self.apprentice, parallel=self.parallel)
 		for t in range(self.simulations_per_state):
-			if self.apprentice is not None and t % 10 == 0:
+			if self.apprentice is not None:
 				print("running simulation #t = ", t)
 			tree.runSingleSimulation()
 
