@@ -25,7 +25,7 @@ class MCTS:
         self.apprentice = apprentice
         self.parallel = parallel
         self.threaded = threaded
-        self.num_threads = 16
+        self.num_threads = batch_size
 
     # Runs SIMULATIONS_PER_STATE simulations on the given state, 
     # collects the action distribution, and returns the argmax action.
@@ -157,9 +157,9 @@ class MCTS:
             logging.debug("Finished processing state # " + str(i))
             
 
-        # logging.debug("Worker Thread returning with " +
-        #     str(self.num_live_threads) + " threads live." +
-        #     " Num submitted is " + str(self.num_submitted))
+        logging.debug("Worker Thread returning with " +
+            str(self.num_live_threads) + " threads live." +
+            " Num submitted is " + str(self.num_submitted))
 
         # Decrement num_live_threads
         self.num_live_threads -= 1
@@ -256,6 +256,7 @@ class MCTS:
             max_depth=self.max_depth, apprentice=self.apprentice, parallel=self.parallel, threaded=self.threaded, batch_num=batch_num, parent=self)
         
         for t in range(self.simulations_per_state):
+            print (t)
             tree.runSingleSimulation()
 
         return tree.getActionCounts() / self.simulations_per_state
@@ -296,7 +297,6 @@ class MCTS:
         distributions[0:self.batch_size] = p1Dist
         distributions[self.batch_size:] = p2Dist
         end = time.time()
-
 
         start = time.time()
         if outFile1 is not None and outFile2 is not None:
