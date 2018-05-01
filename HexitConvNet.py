@@ -21,6 +21,9 @@ class CNN:
         #name used for saving and restoring
         self.name = name
 
+        tf.logging.set_verbosity(tf.logging.ERROR)
+
+
     '''
     Building a convolutional net as described in the paper "Thinking Fast and Slow
     with Deep Learning and Tree Search"
@@ -115,7 +118,6 @@ class CNN:
 
 
         if(os.path.exists(self.name + "/convnet.meta")):
-            print ("Loading from previous checkpoint")
             # Add an op to initialize the variables.
             init_op = tf.global_variables_initializer()
         

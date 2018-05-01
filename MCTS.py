@@ -109,7 +109,6 @@ class MCTS:
 			action_distribution2[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
 			action_distribution1[-1] = 1
 		return np.array([action_distribution1, action_distribution2])
-    
 
 
     def master_thread_func(self):
@@ -117,36 +116,35 @@ class MCTS:
             return 
 
         while (self.num_white_threads_left + self.num_black_threads_left) > 0:
-            logging.debug('Inside the master thread, resetting num_submitted to 0, and reinitializing apprentice batch and predictions')
             self.num_submitted = 0
             self.apprentice_batch = np.zeros((2 * self.batch_size, 6, self.size + 4, self.size + 4))
             self.apprentice_predictions = np.zeros((2 * self.batch_size, self.num_actions))
             
             # Wait for the batch_ready event
+            logging.debug("Master thread waiting...")
             self.batch_ready.wait()
-            #logging.debug('Done waiting, batch_ready has been set')
+            logging.debug("Master thread awoken")
+
+            if self.finished:
+                return
 
             # ship the apprentice off
-            logging.debug("shipping a batch off to the apprentice")
             self.apprentice_finished.clear()
             self.apprentice_predictions = self.apprentice.getActionDistribution(self.apprentice_batch)
-            logging.debug("the apprentice has finished the batch")
 
-            logging.debug("setting apprentice_finished from master")
             self.batch_ready.clear()
             self.apprentice_finished.set()
-        # acquire_lock(all_threads_submitted)
-        # all_threads_submitted = False
-        # release_lock(all_threads_submitted)
-        # batch_ready.wait() # Waits until the last worker to arrive sets the batch_ready event
+
+        return
+
 
     # Suppose there are T threads (pre-determined) there are N threads to process
     # Then this one will take care of every state such that N % T = thread_num
     def worker_thread_func(self, thread_num):
         for i, state in enumerate(self.starting_states):
-            if i % (2 * self.batch_size) != thread_num:
+            if i % self.num_threads != thread_num:
                 continue
-            logging.debug("Processing state " + str(i))
+            logging.debug("Processing state # " + str(i))
             if state.isPlayerOneTurn():
                 self.action_distribution1[i][0:self.num_actions]= self.runSimulations(
                     state, self.root_action_distributions[0][i])
@@ -163,10 +161,27 @@ class MCTS:
                 self.batch_lock.acquire()
                 self.num_black_threads_left -= 1
                 self.batch_lock.release()
-            logging.debug("Finished Processing state " + str(i))
+            logging.debug("Finished processing state # " + str(i))
+            
+
+        logging.debug("Worker Thread returning with " +
+            str(self.num_white_threads_left + self.num_black_threads_left) + " threads left." +
+            " Num submitted is " + str(self.num_submitted) + 
+            ".  Num white threads left: " + str(self.num_white_threads_left) +
+            ".  Num black threads left: " + str(self.num_black_threads_left))
+
+        # Check if batch_ready needs to be set
+        if self.num_submitted == (self.num_white_threads_left + self.num_black_threads_left):
+            logging.debug("batch ready must be set")
+            self.batch_ready.set()
+
+
+        return
+
 
 
     def threadedGenerateDataBatch(self, starting_states, starting_inputs):
+        print("shape of starting states: ", len(starting_states))
         self.starting_states = starting_states
         self.starting_inputs = starting_inputs
 
@@ -175,6 +190,7 @@ class MCTS:
         self.batch_ready = threading.Event()
         self.apprentice_finished = threading.Event()
         self.num_submitted = 0
+        self.finished = False
 
         # Configure the log
         logging.basicConfig(level=logging.DEBUG,
@@ -202,7 +218,6 @@ class MCTS:
         root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
         if self.apprentice is not None:
             root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
-            print("root_action_distributions shape:", root_action_distributions.shape)
             # this is a [batch_size, num_actions] shaped matrix
 
         self.root_action_distributions = root_action_distributions
@@ -225,19 +240,13 @@ class MCTS:
 
 
         # Wait for all the threads to finish
-        master_thread.join()
         for i in range(self.num_threads):
             worker_threads[i].join()
 
-        # for i, state in enumerate(starting_states):
-        #     print("i:", i)
-        #     if state.isPlayerOneTurn():
-        #         action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[0][i])
-        #         action_distribution2[i][-1] = 1
-        #     else:
-        #         action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[1][i - self.batch_size])
-        #         action_distribution1[i-self.batch_size][-1] = 1
-
+        # Once all worker threads return, set the batch_ready event so the master can return
+        self.finished = True
+        self.batch_ready.set()
+        master_thread.join()
 
 
         return (starting_states, action_distribution1, action_distribution2)
@@ -249,16 +258,12 @@ class MCTS:
     # The i-th element is the number of times we took the i-th action from the root state (as a probability).
     # The last element is the number of times we took no action (if it wasn't this player's turn.)
     def runSimulations(self, start_state, root_action_distribution, batch_num=0):
-        if self.apprentice is not None:
-            print("in runSimulations, root_action_distribution shape:", root_action_distribution.shape)
         # Initialize new tree
         tree = MCTS_Tree(start_state, self.size, self.num_actions,
             root_action_distribution=root_action_distribution,
             max_depth=self.max_depth, apprentice=self.apprentice, parallel=self.parallel, threaded=self.threaded, batch_num=batch_num, parent=self)
         
         for t in range(self.simulations_per_state):
-            if self.apprentice is not None and t % 10 == 0:
-                print("running simulation #t = ", t)
             tree.runSingleSimulation()
 
         return tree.getActionCounts() / self.simulations_per_state
@@ -279,7 +284,6 @@ class MCTS:
             starting_inputs.append(startingStates[i+self.batch_size].channels_from_state())
         end = time.time()
         starting_inputs = np.array(starting_inputs)
-        #print ("Time taken to generate", 2 * self.batch_size, "random states: ", (end-start))
 
         start = time.time()
         # We don't care about P2's action distribution, and the last column of -1's is unnecessary
@@ -300,7 +304,6 @@ class MCTS:
         distributions[0:self.batch_size] = p1Dist
         distributions[self.batch_size:] = p2Dist
         end = time.time()
-        #print ("Time taken to do MCTS on", 2 * self.batch_size, "states: ", (end-start))
 
 
         start = time.time()
@@ -308,7 +311,6 @@ class MCTS:
             np.save(outFile1, input_data)
             np.save(outFile2, distributions)
         end = time.time()
-        #print ("Time to create inputs for apprentice: ", (end-start))
         return (starting_inputs, distributions)
 
 

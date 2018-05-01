@@ -11,12 +11,10 @@ class Apprentice:
         self.NN = HexitConvNet.CNN((6, board_size+4, board_size+4), board_size * board_size, 64,batch_size, name)
 
     def train(self, states, actions):
-        print("Entered Apprentice Train Function")
         mask = np.zeros((states.shape[0], self.board_size*self.board_size))
         for i, state in enumerate(states):
             mask[i] = (((state[0, 2:-2, 2:-2] + state[1, 2:-2, 2:-2])-1)*-1).flatten()
         self.NN.train(states, actions, mask)
-        print("Exited Apprentice Train Functions")
 
     def getActionDistribution(self, states):
         mask = np.zeros((states.shape[0], self.board_size*self.board_size))
@@ -29,9 +27,7 @@ class Apprentice:
         return prediction[0]
 
     def predict(self, states):
-        print("Entered Apprentice Predict Function")
         return self.getActionDistribution(states)
-        print("Exited Apprentice Predict Function")
 
     # Takes in a state_to_channel of size [1, 6, 9, 9] and outputs a [25,] action distribution 
     def getActionDistributionSingle(self, state, turn):
