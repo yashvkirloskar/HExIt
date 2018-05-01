@@ -172,14 +172,11 @@ class MCTS_Node:
 
                     self.tree.parent.num_submitted += 1
                     # Configure the log
-                    logging.basicConfig(level=logging.DEBUG,
-                        format='(%(threadName)-10s) %(message)s',
-                        )
-                    logging.debug("Submitting myself to the apprentice batch")
-                    #batch_ready = self.tree.parent.num_submitted >= self.tree.parent.num_white_threads_left + self.tree.parent.num_black_threads_left
+                    # logging.basicConfig(level=logging.DEBUG,
+                    #     format='(%(threadName)-10s) %(message)s',
+                    #     )
                     batch_ready = self.tree.parent.num_submitted >= self.tree.parent.num_live_threads
                     if batch_ready:
-                        logging.debug("Batch is ready")
                         self.tree.parent.num_submitted = 0
                         self.tree.parent.batch_ready.set()
                     self.tree.parent.batch_lock.release()
