@@ -161,26 +161,34 @@ class MCTS_Node:
             if self.isRoot:
                 numer = self.root_action_distribution
             else:
-                # Place self on apprentice batch queue
-                self.tree.parent.batch_lock.acquire()
-                batch_index = ((0 if self.state.turn() == 1 else 1) * self.tree.parent.batch_size) + self.batch_num
-                self.tree.parent.apprentice_batch[batch_index] = self.state.channels_from_state()
-                self.tree.parent.num_submitted += 1
-                # Configure the log
-                logging.basicConfig(level=logging.DEBUG,
-                    format='(%(threadName)-10s) %(message)s',
-                    )
-                logging.debug("Submitting myself to the apprentice batch")
-                batch_ready = self.tree.parent.num_submitted >= self.tree.parent.num_white_threads_left + self.tree.parent.num_black_threads_left
-                if batch_ready:
-                    logging.debug("Batch is ready")
-                    self.tree.parent.num_submitted = 0
-                    self.tree.parent.batch_ready.set()
-                self.tree.parent.batch_lock.release()
-                # wait for the batch to complete
-                
-                self.tree.parent.apprentice_finished.wait()
-                numer = self.tree.parent.apprentice_predictions[batch_index]
+                if self.tree.parent.threaded:
+                    # Place self on apprentice batch queue
+                    self.tree.parent.batch_lock.acquire()
+                    
+                    turn_index = 0 if self.state.turn() == 1 else 1
+                    full_batch_index = (turn_index * self.tree.parent.batch_size) + self.batch_num
+                    apprentice_batch_index = full_batch_index % self.tree.parent.num_threads
+                    self.tree.parent.apprentice_batch[apprentice_batch_index] = self.state.channels_from_state()
+
+                    self.tree.parent.num_submitted += 1
+                    # Configure the log
+                    logging.basicConfig(level=logging.DEBUG,
+                        format='(%(threadName)-10s) %(message)s',
+                        )
+                    logging.debug("Submitting myself to the apprentice batch")
+                    #batch_ready = self.tree.parent.num_submitted >= self.tree.parent.num_white_threads_left + self.tree.parent.num_black_threads_left
+                    batch_ready = self.tree.parent.num_submitted >= self.tree.parent.num_live_threads
+                    if batch_ready:
+                        logging.debug("Batch is ready")
+                        self.tree.parent.num_submitted = 0
+                        self.tree.parent.batch_ready.set()
+                    self.tree.parent.batch_lock.release()
+                    # wait for the batch to complete
+                    
+                    self.tree.parent.apprentice_finished.wait()
+                    numer = self.tree.parent.apprentice_predictions[turn_index][self.batch_num % self.tree.parent.num_threads]
+                else:
+                    numer = self.apprentice.getActionDistributionSingle(self.state.channels_from_state(), self.state.turn())
             apprentice_term = self.w_a * (numer/denom)
 
         uct_new = uct + apprentice_term

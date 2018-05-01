@@ -32,7 +32,7 @@ def testBasicIntegration(batch_size=3, game_size=5, simulations_per_state=500, t
     train_inputs, train_labels = mcts.generateExpertBatch()
     print("DONE GENERATING EXPERT TRAINING BATCH")
 
-    apprentice = Apprentice(name="test_basic_integration", board_size=5, batch_size=batch_size)
+    apprentice = Apprentice(name="test_basic_integration", board_size=5, batch_size=mcts.num_threads)
     # not sure what mask does
     print("TRAINING APPRENTICE")
     apprentice.train(train_inputs, train_labels)
@@ -84,7 +84,7 @@ def testMultipleIterations(num_iterations=3, batch_size=2, game_size=5, simulati
     mcts_initial = MCTS(size=game_size, batch_size=batch_size,
         simulations_per_state=simulations_per_state,
         max_depth=3, apprentice=None, threaded=threaded)
-    apprentice = Apprentice(name="test_multiple_integration", board_size=game_size, batch_size=batch_size)
+    apprentice = Apprentice(name="test_multiple_integration", board_size=game_size, batch_size=mcts_initial.num_threads)
     mcts_assisted = MCTS(size=game_size, batch_size=batch_size,
         simulations_per_state=simulations_per_state,
         max_depth=3, apprentice=apprentice, threaded=threaded)

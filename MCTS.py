@@ -115,11 +115,13 @@ class MCTS:
         if self.apprentice is None:
             return 
 
-        while (self.num_white_threads_left + self.num_black_threads_left) > 0:
+        #while (self.num_white_threads_left + self.num_black_threads_left) > 0:
+        while self.num_live_threads > 0:
             self.num_submitted = 0
-            self.apprentice_batch = np.zeros((2 * self.batch_size, 6, self.size + 4, self.size + 4))
-            self.apprentice_predictions = np.zeros((2 * self.batch_size, self.num_actions))
-            
+            #self.apprentice_batch = np.zeros((2 * self.batch_size, 6, self.size + 4, self.size + 4))
+            self.apprentice_batch = np.zeros((2 * self.num_threads, 6, self.size + 4, self.size + 4))
+            #self.apprentice_predictions = np.zeros((2 * self.batch_size, self.num_actions))
+            self.apprentice_predictions = np.zeros((2, self.num_threads, self.num_actions))
             # Wait for the batch_ready event
             logging.debug("Master thread waiting...")
             self.batch_ready.wait()
@@ -147,31 +149,39 @@ class MCTS:
             logging.debug("Processing state # " + str(i))
             if state.isPlayerOneTurn():
                 self.action_distribution1[i][0:self.num_actions]= self.runSimulations(
-                    state, self.root_action_distributions[0][i])
+                    state, self.root_action_distributions[0][i],
+                    batch_num=i % self.batch_size)
                 self.action_distribution2[i][-1] = 1
-                # decrement num_white_threads_left
-                self.batch_lock.acquire()
-                self.num_white_threads_left -= 1
-                self.batch_lock.release()
+
+                #self.batch_lock.acquire()
+                #self.num_white_threads_left -= 1
+                #self.batch_lock.release()
             else:
                 self.action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(
-                    state, self.root_action_distributions[1][i - self.batch_size])
+                    state, self.root_action_distributions[1][i - self.batch_size],
+                    batch_num=i % self.batch_size)
                 self.action_distribution1[i-self.batch_size][-1] = 1
-                # decrement num_black_threads
-                self.batch_lock.acquire()
-                self.num_black_threads_left -= 1
-                self.batch_lock.release()
+                
+                # self.batch_lock.acquire()
+                # self.num_black_threads_left -= 1
+                # self.batch_lock.release()
+
             logging.debug("Finished processing state # " + str(i))
             
 
         logging.debug("Worker Thread returning with " +
-            str(self.num_white_threads_left + self.num_black_threads_left) + " threads left." +
-            " Num submitted is " + str(self.num_submitted) + 
-            ".  Num white threads left: " + str(self.num_white_threads_left) +
-            ".  Num black threads left: " + str(self.num_black_threads_left))
+            str(self.num_live_threads) + " threads live." +
+            " Num submitted is " + str(self.num_submitted))
 
         # Check if batch_ready needs to be set
-        if self.num_submitted == (self.num_white_threads_left + self.num_black_threads_left):
+        # if self.num_submitted == (self.num_white_threads_left + self.num_black_threads_left):
+        #     logging.debug("batch ready must be set")
+        #     self.batch_ready.set()
+
+        # Decrement num_live_threads
+        self.num_live_threads -= 1
+
+        if self.num_submitted == self.num_live_threads:
             logging.debug("batch ready must be set")
             self.batch_ready.set()
 
@@ -200,13 +210,17 @@ class MCTS:
         # Initialize the threshold which is the number of states the master thread should wait for 
         # before shipping the batch off to the apprentice
         # This will get decremented when certain threads finish all their simulations
-        self.num_white_threads_left = self.batch_size
-        self.num_black_threads_left = self.batch_size
+        #self.num_white_threads_left = self.batch_size
+        #self.num_black_threads_left = self.batch_size
+        self.num_live_threads = self.num_threads
 
         # Initialize the apprentice batch that will shipped off to the apprentice for prediction
-        self.apprentice_batch = np.zeros((2 * self.batch_size, 6, self.size + 4, self.size + 4))
+        #self.apprentice_batch = np.zeros((2 * self.batch_size, 6, self.size + 4, self.size + 4))
+        self.apprentice_batch = np.zeros((2 * self.num_threads, 6, self.size + 4, self.size + 4))
+
         # Initialize the matrix of action distributions that the apprentice will periodically fill
-        self.apprentice_predictions = np.zeros((2 * self.batch_size, self.num_actions))
+        #self.apprentice_predictions = np.zeros((2 * self.batch_size, self.num_actions))
+        self.apprentice_predictions = np.zeros((2, self.num_threads, self.num_actions))
 
         action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
         action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
