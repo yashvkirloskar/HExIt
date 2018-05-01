@@ -10,10 +10,10 @@ import logging
 import threading
 
 class MCTS:
-	#uct_new(s,a) = uct(s,a) + w_a * (apprentice_policy(s,a) / n(s,a) + 1)
-	# given a list of batch_size state objects
-	# return an array with batch_size elements.  Each element is a 26-list.  The state, followed by number of times we took action i
-	#uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
+    #uct_new(s,a) = uct(s,a) + w_a * (apprentice_policy(s,a) / n(s,a) + 1)
+    # given a list of batch_size state objects
+    # return an array with batch_size elements.  Each element is a 26-list.  The state, followed by number of times we took action i
+    #uct(s,a) = r(s,a)/n(s,a) + c_b * sqrt ( log(n(s)) / n(s,a) )
 
     def __init__(self, size=5, batch_size=256, simulations_per_state=1000, max_depth=6,
         apprentice=None, parallel=False, threaded=False, num_threads=16):
@@ -27,88 +27,88 @@ class MCTS:
         self.threaded = threaded
         self.num_threads = 16
 
-	# Runs SIMULATIONS_PER_STATE simulations on the given state, 
-	# collects the action distribution, and returns the argmax action.
-	def getMove(self, state):
-		# run all the starting states through the apprentice once, for efficiency
-		root_action_distribution = [None for i in range(self.num_actions)]
-		if self.apprentice is not None:
-			state_input = state.channels_from_state()
-			root_action_distribution = self.apprentice.getActionDistributionSingle(state_input, state.turn())
-			# this is a [num_actions,] shaped vector
+    # Runs SIMULATIONS_PER_STATE simulations on the given state, 
+    # collects the action distribution, and returns the argmax action.
+    def getMove(self, state):
+        # run all the starting states through the apprentice once, for efficiency
+        root_action_distribution = [None for i in range(self.num_actions)]
+        if self.apprentice is not None:
+            state_input = state.channels_from_state()
+            root_action_distribution = self.apprentice.getActionDistributionSingle(state_input, state.turn())
+            # this is a [num_actions,] shaped vector
 
-		action_distribution = self.runSimulations(state, root_action_distribution)
-		return np.argmax(action_distribution)
-
-
-	# This method generates a dataset of size SELF.BATCH_SIZE.
-	# It is passed STARTING_STATES, which is a list of BATCH_SIZE states (as State instances).
-	# For each starting state, runs SELF.SIMULATIONS_PER_STATE, each starting at that start state.
-	# Calculates the number of times each action was taken from the root node (start state).
-	# Returns three arrays, S, A1 and A2, each with BATCH_SIZE + 1 elements.
-	# S is just a copy of STARTING_STATES.
-	# The i-th element of A gives the distribution of actions from the i-th start state for Player 1.
-	# The i-th element of A gives the distribution of actions from the i-th start state for Player 2.
-	# If it is Player X's turn, then Player Y's distribution will be all 0's except for the last position is a 1.
-	# This data is to be passed to the apprentice, that will be trained to mimic this distribution.
-	def generateDataBatch(self, starting_states, starting_inputs):
-		action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
-		action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
-
-		# run all the starting states through the apprentice as once
-		#root_action_distributions = [None for i in range(self.num_actions)]
-		root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
-		if self.apprentice is not None:
-			root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
-			print("root_action_distributions shape:", root_action_distributions.shape)
-			# this is a [batch_size, num_actions] shaped matrix
-
-		for i, state in enumerate(starting_states):
-			print("i:", i)
-			if state.isPlayerOneTurn():
-				action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[0][i])
-				action_distribution2[i][-1] = 1
-			else:
-				action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[1][i - self.batch_size])
-				action_distribution1[i-self.batch_size][-1] = 1
-
-		return (starting_states, action_distribution1, action_distribution2)
-
-	def parallelGenerateDataBatch(self, starting_states, starting_inputs):
-		
-
-		# run all the starting states through the apprentice as once
-		#root_action_distributions = [None for i in range(self.num_actions)]
-		# root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
-		# if self.apprentice is not None:
-		# 	root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
-		# 	print("root_action_distributions shape:", root_action_distributions.shape)
-			# this is a [batch_size, num_actions] shaped matrix
-		# map_input = np.array([(starting_states[i], root_action_distributions[0 if i < self.batch_size else 1][i % self.batch_size]) for i in range(2*self.batch_size)])
-		# print (map_input.shape)
-		logger = multiprocessing.log_to_stderr()
-		logger.setLevel(logging.INFO)
-		p = Pool()
-		distributions = p.map(func=self.parallelRunSimulations, iterable=starting_states)
-		p.close()
-		p.join()
-		distributions = np.array(distributions)
-		action_distribution1 = distributions[0:self.batch_size, 0, :]
-		action_distribution2 = distributions[self.batch_size:, 1, :]
-		return (starting_states, action_distribution1, action_distribution2)
+        action_distribution = self.runSimulations(state, root_action_distribution)
+        return np.argmax(action_distribution)
 
 
-	def parallelRunSimulations(self, state):
-		action_distribution1 = np.zeros(shape=(self.num_actions + 1))
-		action_distribution2 = np.zeros(shape=(self.num_actions + 1))
-		root_action_distribution = None
-		if state.isPlayerOneTurn():
-			action_distribution1[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
-			action_distribution2[-1] = 1
-		else:
-			action_distribution2[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
-			action_distribution1[-1] = 1
-		return np.array([action_distribution1, action_distribution2])
+    # This method generates a dataset of size SELF.BATCH_SIZE.
+    # It is passed STARTING_STATES, which is a list of BATCH_SIZE states (as State instances).
+    # For each starting state, runs SELF.SIMULATIONS_PER_STATE, each starting at that start state.
+    # Calculates the number of times each action was taken from the root node (start state).
+    # Returns three arrays, S, A1 and A2, each with BATCH_SIZE + 1 elements.
+    # S is just a copy of STARTING_STATES.
+    # The i-th element of A gives the distribution of actions from the i-th start state for Player 1.
+    # The i-th element of A gives the distribution of actions from the i-th start state for Player 2.
+    # If it is Player X's turn, then Player Y's distribution will be all 0's except for the last position is a 1.
+    # This data is to be passed to the apprentice, that will be trained to mimic this distribution.
+    def generateDataBatch(self, starting_states, starting_inputs):
+        action_distribution1 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
+        action_distribution2 = np.zeros(shape=(self.batch_size, self.num_actions + 1))
+
+        # run all the starting states through the apprentice as once
+        #root_action_distributions = [None for i in range(self.num_actions)]
+        root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
+        if self.apprentice is not None:
+            root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
+            print("root_action_distributions shape:", root_action_distributions.shape)
+            # this is a [batch_size, num_actions] shaped matrix
+
+        for i, state in enumerate(starting_states):
+            print("i:", i)
+            if state.isPlayerOneTurn():
+                action_distribution1[i][0:self.num_actions] = self.runSimulations(state, root_action_distributions[0][i])
+                action_distribution2[i][-1] = 1
+            else:
+                action_distribution2[i-self.batch_size][0:self.num_actions] = self.runSimulations(state, root_action_distributions[1][i - self.batch_size])
+                action_distribution1[i-self.batch_size][-1] = 1
+
+        return (starting_states, action_distribution1, action_distribution2)
+
+    def parallelGenerateDataBatch(self, starting_states, starting_inputs):
+        
+
+        # run all the starting states through the apprentice as once
+        #root_action_distributions = [None for i in range(self.num_actions)]
+        # root_action_distributions = np.zeros((2, self.batch_size, self.num_actions))
+        # if self.apprentice is not None:
+        #   root_action_distributions = self.apprentice.getActionDistribution(starting_inputs)
+        #   print("root_action_distributions shape:", root_action_distributions.shape)
+            # this is a [batch_size, num_actions] shaped matrix
+        # map_input = np.array([(starting_states[i], root_action_distributions[0 if i < self.batch_size else 1][i % self.batch_size]) for i in range(2*self.batch_size)])
+        # print (map_input.shape)
+        logger = multiprocessing.log_to_stderr()
+        logger.setLevel(logging.INFO)
+        p = Pool()
+        distributions = p.map(func=self.parallelRunSimulations, iterable=starting_states)
+        p.close()
+        p.join()
+        distributions = np.array(distributions)
+        action_distribution1 = distributions[0:self.batch_size, 0, :]
+        action_distribution2 = distributions[self.batch_size:, 1, :]
+        return (starting_states, action_distribution1, action_distribution2)
+
+
+    def parallelRunSimulations(self, state):
+        action_distribution1 = np.zeros(shape=(self.num_actions + 1))
+        action_distribution2 = np.zeros(shape=(self.num_actions + 1))
+        root_action_distribution = None
+        if state.isPlayerOneTurn():
+            action_distribution1[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+            action_distribution2[-1] = 1
+        else:
+            action_distribution2[0:self.num_actions] = self.runSimulations(state, root_action_distribution)
+            action_distribution1[-1] = 1
+        return np.array([action_distribution1, action_distribution2])
 
 
     def master_thread_func(self):

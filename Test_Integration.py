@@ -162,7 +162,7 @@ def main():
     overall_start = time.time()
     #testBasicIntegration(batch_size=1, simulations_per_state=10, threaded=True)
     testMultipleIterations(num_iterations=2, batch_size=16, simulations_per_state=10, threaded=True)
-    testMultipleIterations(num_iterations=2, batch_size=16, simulations_per_state=10, threaded=False)
+    #testMultipleIterations(num_iterations=2, batch_size=16, simulations_per_state=10, threaded=False)
     overall_end = time.time()
     print ("All tests passed! Took", overall_end - overall_start, "seconds\n\n")
     

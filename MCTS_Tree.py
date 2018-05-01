@@ -5,33 +5,33 @@ import logging
 
 
 class MCTS_Tree:
-	def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None, parallel=False, threaded=False, batch_num=0, parent=None):
-		self.start_state = start_state
-		self.size = size
-		self.action_counts = np.zeros(num_actions)
-		self.parallel = parallel
+    def __init__(self, start_state, size, num_actions, root_action_distribution, max_depth=6, apprentice=None, parallel=False, threaded=False, batch_num=0, parent=None):
+        self.start_state = start_state
+        self.size = size
+        self.action_counts = np.zeros(num_actions)
+        self.parallel = parallel
 
-		if parallel:
-			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=False, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
-		else:
-			self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
+        if parallel:
+            self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=False, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
+        else:
+            self.root = MCTS_Node(start_state, size, num_actions, max_depth=max_depth, apprentice=apprentice, isRoot=True, root_action_distribution=root_action_distribution, batch_num=batch_num, tree=self)
 
-		self.apprentice = apprentice
-		self.root_action_distribution = root_action_distribution
-		self.batch_num = batch_num
-		self.parent = parent
+        self.apprentice = apprentice
+        self.root_action_distribution = root_action_distribution
+        self.batch_num = batch_num
+        self.parent = parent
 
-	# Runs a single simulation starting from the root
-	# Update the action_counts array
-	def runSingleSimulation(self):
-		action_from_root, reward = self.root.runSimulation()
-		if action_from_root != -1:
-			self.action_counts[action_from_root] += 1
+    # Runs a single simulation starting from the root
+    # Update the action_counts array
+    def runSingleSimulation(self):
+        action_from_root, reward = self.root.runSimulation()
+        if action_from_root != -1:
+            self.action_counts[action_from_root] += 1
 
-	# Returns the action counts, which is a list.
-	# The i-th element is the number of time action i was chosen from the root.
-	def getActionCounts(self):
-		return self.action_counts
+    # Returns the action counts, which is a list.
+    # The i-th element is the number of time action i was chosen from the root.
+    def getActionCounts(self):
+        return self.action_counts
 
 
 
