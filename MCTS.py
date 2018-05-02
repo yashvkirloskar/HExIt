@@ -32,6 +32,8 @@ class MCTS:
     # collects the action distribution, and returns the argmax action.
     def getMove(self, state):
         # run all the starting states through the apprentice once, for efficiency
+        temp = self.threaded
+        self.threaded = False
         root_action_distribution = [None for i in range(self.num_actions)]
         if self.apprentice is not None:
             state_input = state.channels_from_state()
@@ -39,6 +41,7 @@ class MCTS:
             # this is a [num_actions,] shaped vector
 
         action_distribution = self.runSimulations(state, root_action_distribution)
+        self.threaded = temp
         return np.argmax(action_distribution)
 
 
