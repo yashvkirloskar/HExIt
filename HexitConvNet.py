@@ -143,7 +143,7 @@ class CNN:
                 save_path = saver.save(session, self.name +  "/" + "convnet")
 
         else:
-            print("no saved graph, building a new one")
+            # print("no saved graph, building a new one")
 
             new_graph = tf.Graph()
             with tf.Session(graph=new_graph) as session:
@@ -175,7 +175,6 @@ class CNN:
         # Add an op to initialize the variables.
     
         with tf.Session() as session:
-
             #Restore the old graph and get relevant ops / variables
             saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
             saver.restore(session,tf.train.latest_checkpoint(self.name))

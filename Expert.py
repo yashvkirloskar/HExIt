@@ -6,7 +6,7 @@ from copy import deepcopy
 
 class Expert:
 
-    def __init__(self, board_size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
+    def __init__(self, name=None, board_size=5, batch_size=256, simulations_per_state=1000, max_depth=6, apprentice=None):
         self.board_size = board_size
         self.batch_size = batch_size
         self.simulations_per_state = simulations_per_state
@@ -17,14 +17,16 @@ class Expert:
 
 
     def generateBatch(self):
-        logger = multiprocessing.log_to_stderr()
-        logger.setLevel(logging.INFO)
-        p = Pool()
-        cpy = deepcopy(self.mcts)
-        ret = p.apply(cpy.generateExpertBatch, [None, None])
+        # logger = multiprocessing.log_to_stderr()
+        # logger.setLevel(logging.INFO)
+        p = Pool(multiprocessing.cpu_count())
+        ret = p.map(deepcopy(self.mcts).generateExpertBatch, [[None, None] for i in range(multiprocessing.cpu_count())])
         p.close()
         p.join()
-        return ret
+        batch = np.concatenate([ret[i][0][0:self.batch_size] for i in range(multiprocessing.cpu_count())] + [ret[i][0][self.batch_size:] for i in range(multiprocessing.cpu_count())], axis=0)
+        labels = np.concatenate([ret[i][1][0:self.batch_size] for i in range(multiprocessing.cpu_count())] + [ret[i][1][self.batch_size:] for i in range(multiprocessing.cpu_count())], axis=0)
+        # print (batch.shape)
+        return (batch, labels)
 
 
     def getMove(self, state):

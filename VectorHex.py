@@ -12,7 +12,7 @@ class VectorHex:
         self.winner = None
         self.p1 = p1
         self.p2 = p2
-        self.ai = HexAgent("testParallel", game_size, 256, 10, 6)
+        self.ai = HexAgent("bestAgent", game_size, 256, 10, 6)
 
     def player_move(self, coord):
         if self.winner is not None:
