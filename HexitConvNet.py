@@ -118,10 +118,12 @@ class CNN:
 
 
         if(os.path.exists(self.name + "/convnet.meta")):
+            tf.reset_default_graph()
             # Add an op to initialize the variables.
             init_op = tf.global_variables_initializer()
         
             with tf.Session() as session:
+
 
                 #Restore the old graph and get relevant ops / variables
                 saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
@@ -174,6 +176,7 @@ class CNN:
     def predict(self, predict_input, predict_mask):
         # Add an op to initialize the variables.
     
+        tf.reset_default_graph()
         with tf.Session() as session:
             #Restore the old graph and get relevant ops / variables
             saver = tf.train.import_meta_graph(self.name + "/" + 'convnet.meta')
