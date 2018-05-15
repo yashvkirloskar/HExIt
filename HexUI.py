@@ -44,13 +44,15 @@ class gameGrid():
         self.white = PhotoImage(file="white_hex.gif")
         self.widgets = [[None for i in range(GRID_SIZE)] for j in range(GRID_SIZE)]
         self.drawGrid()
-        self.p1 = np.random.choice(['ai'])
+        self.p1 = np.random.choice(['random'])
         print ("P1 is ", self.p1)
         if self.p1 == 'ai':
             self.p2 = 'random'
         else:
             self.p2 = np.random.choice(['ai', 'human'])
+        self.p2 = 'ai'
         print ("P2 is " + self.p2)
+
         if (self.p1 == 'ai'):
             print ("Click a tile to make the ai play")
         self.playInfo = VectorHex(GRID_SIZE, p1=self.p1, p2=self.p2)

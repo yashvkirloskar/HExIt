@@ -20,17 +20,18 @@ class HexAgent:
             self.addApprentice = True
 
     def train(self, samples):
+        print ("Start building samples")
         for i in range(samples):
             batch, distributions = self.expert.generateBatch()
             np.save(str(i)+"batch", batch)
             np.save(str(i)+"distributions", distributions)
+        print ("Finished building databases")
         for i in range(samples):
             batch = np.load(str(i)+"batch.npy")
             distributions = np.load(str(i)+"distributions.npy")
             self.apprentice.train(batch, distributions)
-        if self.addApprentice:
-            self.expert = Expert(board_size=self.board_size, batch_size=self.batch_size, simulations_per_state=self.simulations_per_state, max_depth=self.max_depth, apprentice=self.apprentice)
-            self.addApprentice = False
+            os.remove(str(i)+"batch.npy")
+            os.remove(str(i)+"distributions.npy")
 
     # Do not call this method unless you have called train
     def getMove(self, state):

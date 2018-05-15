@@ -39,7 +39,9 @@ class VectorHex:
             for j in range(self.board.shape[0]):
                 if state_board[i, j] == 2:
                     state_board[i, j] = -1
-        if self.p2 == 'random' and self.turn == 2:
+        if self.p1 == 'random' and self.turn == 1:
+            ai_move = self.ai.getRandomMove((State(state_board)))
+        elif self.p2 == 'random' and self.turn == 2:
             ai_move = self.ai.getRandomMove((State(state_board)))
         else:
             ai_move = self.ai.getMove(State(state_board))
